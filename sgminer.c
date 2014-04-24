@@ -5204,6 +5204,15 @@ static bool parse_stratum_response(struct pool *pool, char *s)
 
 	id = json_integer_value(id_val);
 
+	if (err_val && !json_is_null(err_val))  {
+		char *ss;
+		ss = (char *)json_string_value(json_array_get(err_val, 1));
+		if (strcmp(ss, "Method 'subscribe' not found for service 'mining.extranonce'") == 0) {
+			applog(LOG_INFO, "Cannot subscribe to mining.extranonce on %s", get_pool_name(pool));
+			goto out;
+		}
+	}
+
 	mutex_lock(&sshare_lock);
 	HASH_FIND_INT(stratum_shares, &id, sshare);
 	if (sshare) {
@@ -5673,7 +5682,7 @@ retry_stratum:
 		bool init = pool_tset(pool, &pool->stratum_init);
 
 		if (!init) {
-			bool ret = initiate_stratum(pool) && auth_stratum(pool);
+			bool ret = initiate_stratum(pool) && auth_stratum(pool) && subscribe_extranonce(pool);
 
 			if (ret)
 				init_stratum_threads(pool);
