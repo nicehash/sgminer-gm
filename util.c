@@ -2522,7 +2522,7 @@ bool restart_stratum(struct pool *pool)
 		return false;
 	if (!auth_stratum(pool))
 		return false;
-	if (!subscribe_extranonce(pool))
+	if (opt_extranonce_subscribe && !subscribe_extranonce(pool))
 		return false;
 
 	return true;
