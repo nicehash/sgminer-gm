@@ -1882,7 +1882,7 @@ bool subscribe_extranonce(struct pool *pool)
 
 	/* Parse all data in the queue and anything left should be auth */
 	while (42) {
-		if (!socket_full(pool, DEFAULT_SOCKWAIT)) {
+		if (!socket_full(pool, DEFAULT_SOCKWAIT / 30)) {
 			applog(LOG_DEBUG, "Timed out waiting for response extranonce.subscribe");
 			/* some pool doesnt send anything, so this is normal */
 			ret = true;
