@@ -5686,7 +5686,7 @@ retry_stratum:
 		bool init = pool_tset(pool, &pool->stratum_init);
 
 		if (!init) {
-			bool ret = initiate_stratum(pool) && auth_stratum(pool) && (!opt_extranonce_subscribe || subscribe_extranonce(pool));
+			bool ret = initiate_stratum(pool) && (!opt_extranonce_subscribe || subscribe_extranonce(pool)) && auth_stratum(pool);
 
 			if (ret)
 				init_stratum_threads(pool);
