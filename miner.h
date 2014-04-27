@@ -1175,6 +1175,7 @@ struct pool {
 	char *name;
 	char *description;
 	int prio;
+	bool extranonce_subscribe;
 	int accepted, rejected;
 	int seq_rejects;
 	int seq_getfails;
