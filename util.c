@@ -1905,8 +1905,15 @@ bool subscribe_extranonce(struct pool *pool)
 		char *ss;
 
 		if (err_val) {
-			ss = (char *)json_string_value(json_array_get(err_val, 1));
-			if (opt_extranonce_subscribe && strcmp(ss, "Method 'subscribe' not found for service 'mining.extranonce'") == 0) {
+			ss = __json_array_string(err_val, 1);
+			if (!ss)
+				ss = (char *)json_string_value(err_val);
+			if (ss && (strcmp(ss, "Method 'subscribe' not found for service 'mining.extranonce'") == 0)) {
+				applog(LOG_INFO, "Cannot subscribe to mining.extranonce on %s", get_pool_name(pool));
+				ret = true;
+				goto out;
+			}
+			if (ss && (strcmp(ss, "Unrecognized request provided") == 0)) {
 				applog(LOG_INFO, "Cannot subscribe to mining.extranonce on %s", get_pool_name(pool));
 				ret = true;
 				goto out;
