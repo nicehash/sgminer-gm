@@ -27,6 +27,7 @@
 
 #include "compat.h"
 #include "miner.h"
+#include "pool.h"
 #include "util.h"
 
 // BUFSIZ varies on Windows and Linux
