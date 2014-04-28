@@ -258,6 +258,7 @@ if test "x$have_sgminer_sdk" = "xtrue"; then
 	fi
 	PKG_CONFIG="${PKG_CONFIG:-pkg-config} --define-variable=arch=$ARCH_DIR --define-variable=target=$target --define-variable=sgminersdkdir=$SGMINER_SDK"
 	PKG_CONFIG_PATH="$SGMINER_SDK/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+	export PKG_CONFIG_PATH
 fi
 
 AC_ARG_ENABLE([libcurl],
