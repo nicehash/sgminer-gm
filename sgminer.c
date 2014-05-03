@@ -65,11 +65,6 @@ char *curly = ":D";
 	#include <sys/wait.h>
 #endif
 
-#ifdef GIT_VERSION
-#undef VERSION
-#define VERSION GIT_VERSION
-#endif
-
 struct strategies strategies[] = {
 	{ "Failover" },
 	{ "Round Robin" },
@@ -2271,7 +2266,7 @@ static void curses_print_status(void)
 	unsigned short int line = 0;
 
 	wattron(statuswin, A_BOLD);
-	cg_mvwprintw(statuswin, line, 0, PACKAGE " " VERSION " - Started: %s", datestamp);
+	cg_mvwprintw(statuswin, line, 0, PACKAGE " " CGMINER_VERSION " - Started: %s", datestamp);
 	wattroff(statuswin, A_BOLD);
 
 	mvwhline(statuswin, ++line, 0, '-', 80);
@@ -8007,7 +8002,7 @@ int main(int argc, char *argv[])
 	/* We use the getq mutex as the staged lock */
 	stgd_lock = &getq->mutex;
 
-	snprintf(packagename, sizeof(packagename), "%s %s", PACKAGE, VERSION);
+	snprintf(packagename, sizeof(packagename), "%s %s", PACKAGE, CGMINER_VERSION);
 
 #ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);

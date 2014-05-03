@@ -219,6 +219,13 @@ AC_ARG_ENABLE([git-version],
 		[Disable use of git version in version string even if available]),
 		[wantgitver=$enableval], [wantgitver=yes])
 
+AC_ARG_WITH([build_number],
+	[AC_HELP_STRING([--with-build-number], [Specify a build number.])],
+	[BUILD_NUMBER="$withval"]
+	)
+AC_SUBST([BUILD_NUMBER])
+AM_CONDITIONAL([USE_BUILD_NUMBER], [test x$BUILD_NUMBER != x])
+
 curses="auto"
 
 AC_ARG_WITH([curses],
