@@ -1680,6 +1680,7 @@ static bool parse_extranonce(struct pool *pool, json_t *val)
 	}
 
 	cg_wlock(&pool->data_lock);
+	free(pool->nonce1);
 	pool->nonce1 = nonce1;
 	pool->n1_len = strlen(nonce1) / 2;
 	free(pool->nonce1bin);
@@ -2508,6 +2509,8 @@ resend:
 	}
 
 	cg_wlock(&pool->data_lock);
+	free(pool->nonce1);
+	free(pool->sessionid);
 	pool->sessionid = sessionid;
 	pool->nonce1 = nonce1;
 	pool->n1_len = strlen(nonce1) / 2;
