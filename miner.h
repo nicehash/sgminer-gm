@@ -1306,6 +1306,7 @@ struct pool {
 	unsigned char *coinbase;
 	size_t nonce2_offset;
 	unsigned char header_bin[128];
+	double next_diff;
 	int merkle_offset;
 
 	struct timeval tv_lastwork;
