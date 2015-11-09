@@ -19,8 +19,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef SPONGE_H_
-#define SPONGE_H_
+#ifndef SPONGEOLD_H_
+#define SPONGEOLD_H_
 
 #include <stdint.h>
 
@@ -74,35 +74,25 @@ static inline uint64_t rotr64( const uint64_t w, const unsigned c ){
 
 
 //---- Housekeeping
-void initState(uint64_t state[/*16*/]);
+void initStateO(uint64_t state[/*16*/]);
 
 //---- Squeezes
-void squeeze(uint64_t *state, unsigned char *out, unsigned int len);
-void reducedSqueezeRow0(uint64_t* state, uint64_t* row, uint64_t nCols);
+void squeezeO(uint64_t *state, unsigned char *out, unsigned int len);
+void reducedSqueezeRow0O(uint64_t* state, uint64_t* row);
 
 //---- Absorbs
-void absorbBlock(uint64_t *state, const uint64_t *in);
-void absorbBlockBlake2Safe(uint64_t *state, const uint64_t *in);
+void absorbBlockO(uint64_t *state, const uint64_t *in);
+void absorbBlockBlake2SafeO(uint64_t *state, const uint64_t *in);
 
 //---- Duplexes
-void reducedDuplexRow1(uint64_t *state, uint64_t *rowIn, uint64_t *rowOut, uint64_t nCols);
-void reducedDuplexRowSetup(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut, uint64_t nCols);
-void reducedDuplexRow(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut, uint64_t nCols);
+void reducedDuplexRow1O(uint64_t *state, uint64_t *rowIn, uint64_t *rowOut);
+void reducedDuplexRowSetupO(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut);
+void reducedDuplexRowO(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut);
 
 //---- Misc
-void printArray(unsigned char *array, unsigned int size, char *name);
+void printArrayO(unsigned char *array, unsigned int size, char *name);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-////TESTS////
-//void reducedDuplexRowc(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut);
-//void reducedDuplexRowd(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut);
-//void reducedDuplexRowSetupv4(uint64_t *state, uint64_t *rowIn1, uint64_t *rowIn2, uint64_t *rowOut1, uint64_t *rowOut2);
-//void reducedDuplexRowSetupv5(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut);
-//void reducedDuplexRowSetupv5c(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut);
-//void reducedDuplexRowSetupv5d(uint64_t *state, uint64_t *rowIn, uint64_t *rowInOut, uint64_t *rowOut);
-/////////////
 
 
 #endif /* SPONGE_H_ */

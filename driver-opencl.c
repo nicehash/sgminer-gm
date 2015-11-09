@@ -257,14 +257,14 @@ char *set_gpu_threads(const char *_arg)
   if (nextptr == NULL)
     return "Invalid parameters for set_gpu_threads";
   val = atoi(nextptr);
-  if (val < 1 || val > 10)
+  if (val < 1 || val > 20) // gpu_threads increase max value to 20
     return "Invalid value passed to set_gpu_threads";
 
   gpus[device++].threads = val;
 
   while ((nextptr = strtok(NULL, ",")) != NULL) {
     val = atoi(nextptr);
-    if (val < 1 || val > 10)
+    if (val < 1 || val > 20) // gpu_threads increase max value to 20
       return "Invalid value passed to set_gpu_threads";
 
     gpus[device++].threads = val;
@@ -1472,6 +1472,9 @@ static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
     }
     applog(LOG_DEBUG, "GPU %d found something?", gpu->device_id);
     postcalc_hash_async(thr, work, thrdata->res);
+//	postcalc_hash(thr);
+//	submit_tested_work(thr, work);
+//	submit_work_async(work);
     memset(thrdata->res, 0, buffersize);
     /* This finish flushes the writebuffer set with CL_FALSE in clEnqueueWriteBuffer */
     clFinish(clState->commandQueue);
@@ -1493,6 +1496,12 @@ static void opencl_thread_shutdown(struct thr_info *thr)
     clFinish(clState->commandQueue);
     clReleaseMemObject(clState->outputBuffer);
     clReleaseMemObject(clState->CLbuffer0);
+	if (clState->buffer1)
+	clReleaseMemObject(clState->buffer1);
+	if (clState->buffer2)
+	clReleaseMemObject(clState->buffer2);
+	if (clState->buffer3)
+	clReleaseMemObject(clState->buffer3);
     if (clState->padbuffer8)
       clReleaseMemObject(clState->padbuffer8);
     clReleaseKernel(clState->kernel);

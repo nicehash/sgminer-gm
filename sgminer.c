@@ -1919,6 +1919,7 @@ static void calc_midstate(struct work *work)
   endian_flip32(work->midstate, work->midstate);
 }
 
+
 static struct work *make_work(void)
 {
   struct work *w = (struct work *)calloc(1, sizeof(struct work));
@@ -2260,7 +2261,9 @@ static bool gbt_decode(struct pool *pool, json_t *res_val)
 
 static bool getwork_decode(json_t *res_val, struct work *work)
 {
-  if (unlikely(!jobj_binary(res_val, "data", work->data, sizeof(work->data), true))) {
+  size_t worklen = 128;
+  worklen = ((!safe_cmp(work->pool->algorithm.name, "credits")) ? sizeof(work->data) : worklen);
+  if (unlikely(!jobj_binary(res_val, "data", work->data, worklen, true))) {
     if (opt_morenotices)
       applog(LOG_ERR, "%s: JSON inval data", isnull(get_pool_name(work->pool), ""));
     return false;
@@ -3018,10 +3021,17 @@ static bool submit_upstream_work(struct work *work, CURL *curl, char *curl_err_s
 
   cgpu = get_thr_cgpu(thr_id);
 
-  endian_flip128(work->data, work->data);
+  if (safe_cmp(work->pool->algorithm.name, "credits")) {
+    endian_flip128(work->data, work->data);
+  } else {
+    endian_flip168(work->data, work->data);
+  }
 
   /* build hex string - Make sure to restrict to 80 bytes for Neoscrypt */
-  hexstr = bin2hex(work->data, ((!safe_cmp(work->pool->algorithm.name, "neoscrypt")) ? 80 : sizeof(work->data)));
+  int datasize = 128;
+  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt")) datasize = 80;
+  else if (!safe_cmp(work->pool->algorithm.name, "credits")) datasize = 168;
+  hexstr = bin2hex(work->data, datasize);
 
   /* build JSON-RPC request */
   if (work->gbt) {
@@ -7060,7 +7070,10 @@ void inc_hw_errors(struct thr_info *thr)
 /* Fills in the work nonce and builds the output data in work->hash */
 static void rebuild_nonce(struct work *work, uint32_t nonce)
 {
-  uint32_t *work_nonce = (uint32_t *)(work->data + 76);
+  uint32_t nonce_pos = 76;
+  if (!safe_cmp(work->pool->algorithm.name, "credits")) nonce_pos = 140;
+
+  uint32_t *work_nonce = (uint32_t *)(work->data + nonce_pos);
 
   *work_nonce = htole32(nonce);
 
@@ -7076,7 +7089,10 @@ bool test_nonce(struct work *work, uint32_t nonce)
   rebuild_nonce(work, nonce);
 
   // for Neoscrypt, the diff1targ value is in work->target
-  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt") || !safe_cmp(work->pool->algorithm.name, "pluck")) {
+  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt") || !safe_cmp(work->pool->algorithm.name, "pluck")
+    || !safe_cmp(work->pool->algorithm.name, "yescrypt")
+    || !safe_cmp(work->pool->algorithm.name, "yescrypt-multi")
+  ) {
     diff1targ = ((uint32_t *)work->target)[7];
   }
   else {

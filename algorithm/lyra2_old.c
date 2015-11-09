@@ -21,8 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "lyra2.h"
-#include "sponge.h"
+#include "lyra2_old.h"
+#include "sponge_old.h"
 
 /**
  * Executes Lyra2 based on the G function from Blake2b. This version supports salts and passwords
@@ -43,7 +43,7 @@
  *
  * @return 0 if the key is generated correctly; -1 if there is an error (usually due to lack of memory for allocation)
  */
-int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *salt, uint64_t saltlen, uint64_t timeCost, uint64_t nRows, uint64_t nCols) {
+int LYRA2O(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *salt, uint64_t saltlen, uint64_t timeCost, uint64_t nRows, uint64_t nCols) {
 
     //============================= Basic variables ============================//
     int64_t row = 2; //index of row to be processed
@@ -58,10 +58,6 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
 
     //========== Initializing the Memory Matrix and pointers to it =============//
     //Tries to allocate enough space for the whole memory matrix
-
-    const int64_t ROW_LEN_INT64 = BLOCK_LEN_INT64 * nCols;
-    const int64_t ROW_LEN_BYTES = ROW_LEN_INT64 * 8;
-
     i = (int64_t) ((int64_t) nRows * (int64_t) ROW_LEN_BYTES);
     uint64_t *wholeMatrix = malloc(i);
     if (wholeMatrix == NULL) {
@@ -126,24 +122,24 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
     if (state == NULL) {
       return -1;
     }
-    initState(state);
+    initStateO(state);
     //==========================================================================/
 
     //================================ Setup Phase =============================//
     //Absorbing salt, password and basil: this is the only place in which the block length is hard-coded to 512 bits
     ptrWord = wholeMatrix;
     for (i = 0; i < nBlocksInput; i++) {
-      absorbBlockBlake2Safe(state, ptrWord); //absorbs each block of pad(pwd || salt || basil)
-      ptrWord += BLOCK_LEN_BLAKE2_SAFE_INT64; //goes to next block of pad(pwd || salt || basil)
+      absorbBlockBlake2SafeO(state, ptrWord); //absorbs each block of pad(pwd || salt || basil)
+      ptrWord += BLOCK_LEN_BLAKE2_SAFE_BYTES; //goes to next block of pad(pwd || salt || basil)
     }
 
     //Initializes M[0] and M[1]
-    reducedSqueezeRow0(state, memMatrix[0], nCols); //The locally copied password is most likely overwritten here
-    reducedDuplexRow1(state, memMatrix[0], memMatrix[1], nCols);
+    reducedSqueezeRow0O(state, memMatrix[0]); //The locally copied password is most likely overwritten here
+    reducedDuplexRow1O(state, memMatrix[0], memMatrix[1]);
 
     do {
       //M[row] = rand; //M[row*] = M[row*] XOR rotW(rand)
-      reducedDuplexRowSetup(state, memMatrix[prev], memMatrix[rowa], memMatrix[row], nCols);
+      reducedDuplexRowSetupO(state, memMatrix[prev], memMatrix[rowa], memMatrix[row]);
 
 
       //updates the value of row* (deterministically picked during Setup))
@@ -176,7 +172,7 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
   	    //------------------------------------------------------------------------------------------
 
   	    //Performs a reduced-round duplexing operation over M[row*] XOR M[prev], updating both M[row*] and M[row]
-  	    reducedDuplexRow(state, memMatrix[prev], memMatrix[rowa], memMatrix[row], nCols);
+  	    reducedDuplexRowO(state, memMatrix[prev], memMatrix[rowa], memMatrix[row]);
 
   	    //update prev: it now points to the last row ever computed
   	    prev = row;
@@ -193,10 +189,10 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
 
     //============================ Wrap-up Phase ===============================//
     //Absorbs the last block of the memory matrix
-    absorbBlock(state, memMatrix[rowa]);
+    absorbBlockO(state, memMatrix[rowa]);
 
     //Squeezes the key
-    squeeze(state, K, kLen);
+    squeezeO(state, K, kLen);
     //==========================================================================/
 
     //========================= Freeing the memory =============================//
