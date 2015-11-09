@@ -49,13 +49,12 @@
 
 #define PATH_MAX MAX_PATH
 
-#define R_OK 0
-
 // Libraries to include
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "wsock32.lib")
 #pragma comment(lib, "pthreadVC2.lib")
 #pragma comment(lib, "OpenCL.lib")
+#pragma comment(lib, "jansson.lib")
 
 #ifdef HAVE_LIBCURL
 #define CURL_STATICLIB 1
@@ -68,11 +67,11 @@
 
 #endif
 
-#define VERSION "v4.1.271"
+#define VERSION "v5.1.1"
 #define PACKAGE_NAME "sgminer"
 #define PACKAGE_TARNAME "sgminer"
-#define PACKAGE_VERSION "4.1.271"
-#define PACKAGE_STRING "sgminer 4.1.271"
+#define PACKAGE_VERSION "5.1.1"
+#define PACKAGE_STRING "sgminer 5.1.1"
 #define PACKAGE "sgminer"
 
 #define SGMINER_PREFIX ""

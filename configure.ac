@@ -1,8 +1,8 @@
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
-m4_define([v_maj], [4])
+m4_define([v_maj], [5])
 m4_define([v_min], [1])
-m4_define([v_mic], [271])
+m4_define([v_mic], [1])
 m4_define([v_rev], [nicehash])
 ##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##--##
 m4_ifdef([v_rev], [m4_define([v_ver], [v_maj.v_min.v_mic-v_rev])], [m4_define([v_ver], [v_maj.v_min.v_mic])])
@@ -254,8 +254,8 @@ AM_CONDITIONAL([HAVE_CURSES], [test x$curses = xyes])
 AM_CONDITIONAL([HAVE_WINDOWS], [test x$have_win32 = xtrue])
 AM_CONDITIONAL([HAVE_x86_64], [test x$have_x86_64 = xtrue])
 
-AC_CONFIG_SUBDIRS([compat/jansson-2.5])
-JANSSON_LIBS="compat/jansson-2.5/src/.libs/libjansson.a"
+AC_CONFIG_SUBDIRS([submodules/jansson])
+JANSSON_LIBS="submodules/jansson/src/.libs/libjansson.a"
 
 PKG_PROG_PKG_CONFIG()
 
@@ -305,12 +305,21 @@ fi
 AM_CONDITIONAL(USE_GIT_VERSION, [test x$usegitver = xyes])
 
 #check execv signature
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([
-		   #include <process.h>
-		   int execv(const char*, char *const*);
-		   ])],
-		   AC_DEFINE([EXECV_2ND_ARG_TYPE], [char* const*], [int execv(const char*, char*const*);]),
-		   AC_DEFINE([EXECV_2ND_ARG_TYPE], [const char* const*], [int execv(const char*, const char*const*);]))
+if test "x$have_linux" == xtrue; then
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+           #include <unistd.h>
+           int execv(const char*, char *const*);
+           ])],
+           AC_DEFINE([EXECV_2ND_ARG_TYPE], [char* const*], [int execv(const char*, char*const*);]),
+           AC_DEFINE([EXECV_2ND_ARG_TYPE], [const char* const*], [int execv(const char*, const char*const*);]))
+else
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+           #include <process.h>
+           int execv(const char*, char *const*);
+           ])],
+           AC_DEFINE([EXECV_2ND_ARG_TYPE], [char* const*], [int execv(const char*, char*const*);]),
+           AC_DEFINE([EXECV_2ND_ARG_TYPE], [const char* const*], [int execv(const char*, const char*const*);]))
+fi
 
 dnl CCAN wants to know a lot of vars.
 # All the configuration checks.  Regrettably, the __attribute__ checks will
@@ -366,9 +375,10 @@ AC_SUBST(ADL_CPPFLAGS)
 
 AC_CONFIG_FILES([
 	Makefile
-	compat/Makefile
+	submodules/Makefile
 	ccan/Makefile
 	lib/Makefile
+	sph/Makefile
 	])
 AC_OUTPUT
 

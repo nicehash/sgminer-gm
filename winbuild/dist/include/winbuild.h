@@ -1,6 +1,5 @@
-#ifndef __WINBUILD_H__
-#define __WINBUILD_H__
-#endif
+#ifndef WINBUILD_H
+#define WINBUILD_H
 
 #if defined(_MSC_VER)
 
@@ -11,6 +10,7 @@
 #include <stdbool.h>
 #include <mmsystem.h>
 #include <io.h>
+#include <unistd.h>
 #include <process.h>
 #include <math.h>
 #include <time.h>
@@ -131,13 +131,11 @@ inline void* memmem (void* buf, size_t buflen, void* pat, size_t patlen)
 	return 0; 
 }
 
-#define va_copy(a, b) memcpy(&(a), &(b), sizeof(va_list))
-
 #define usleep(x) Sleep((x)/1000)
 #define sleep(x) Sleep((x)*1000)
 
 #define __func__ __FUNCTION__
 #define __attribute__(x)
 
-
-#endif
+#endif /* _MSC_VER */
+#endif /* WINBUILD_H */
