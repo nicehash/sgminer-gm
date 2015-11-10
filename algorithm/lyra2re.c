@@ -68,9 +68,6 @@ inline void lyra2rehash(void *state, const void *input)
     sph_blake256 (&ctx_blake, input, 80);
     sph_blake256_close (&ctx_blake, hashA);
 
-
-
-
     sph_keccak256_init(&ctx_keccak);
     sph_keccak256 (&ctx_keccak,hashA, 32);
     sph_keccak256_close(&ctx_keccak, hashB);
@@ -93,9 +90,7 @@ inline void lyra2rehash(void *state, const void *input)
     sph_bmw256 (&ctx_bmw, hashB, 32);
     sph_bmw256_close(&ctx_bmw, hashA);
 
-//printf("cpu hash %08x %08x %08x %08x\n",hashA[0],hashA[1],hashA[2],hashA[3]);
-
-	memcpy(state, hashA, 32);
+    memcpy(state, hashA, 32);
 }
 
 static const uint32_t diff1targ = 0x0000ffff;
