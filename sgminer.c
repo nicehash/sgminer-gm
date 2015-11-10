@@ -2082,7 +2082,7 @@ static double get_work_blockdiff(const struct work *work)
   double numerator;
 
   // Neoscrypt has the data reversed
-  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt")) {
+  if (work->pool->algorithm.type == ALGO_NEOSCRYPT) {
     diff64 = bswap_64(((uint64_t)(be32toh(*((uint32_t *)(work->data + 72))) & 0xFFFFFF00)) << 8);
     numerator = (double)work->pool->algorithm.diff_numerator;
   }
@@ -2148,7 +2148,7 @@ static void gen_gbt_work(struct pool *pool, struct work *work)
   }
 
   // Neoscrypt doesn't calc_midstate()
-  if (safe_cmp(pool->algorithm.name, "neoscrypt")) {
+  if (pool->algorithm.type == ALGO_NEOSCRYPT) {
     calc_midstate(work);
   }
   local_work++;
@@ -2262,7 +2262,7 @@ static bool gbt_decode(struct pool *pool, json_t *res_val)
 static bool getwork_decode(json_t *res_val, struct work *work)
 {
   size_t worklen = 128;
-  worklen = ((!safe_cmp(work->pool->algorithm.name, "credits")) ? sizeof(work->data) : worklen);
+  worklen = ((work->pool->algorithm.type == ALGO_CRE) ? sizeof(work->data) : worklen);
   if (unlikely(!jobj_binary(res_val, "data", work->data, worklen, true))) {
     if (opt_morenotices)
       applog(LOG_ERR, "%s: JSON inval data", isnull(get_pool_name(work->pool), ""));
@@ -2270,7 +2270,7 @@ static bool getwork_decode(json_t *res_val, struct work *work)
   }
 
   // Neoscrypt doesn't calc midstate
-  if (safe_cmp(work->pool->algorithm.name, "neoscrypt")) {
+  if (work->pool->algorithm.type != ALGO_NEOSCRYPT) {
     if (!jobj_binary(res_val, "midstate", work->midstate, sizeof(work->midstate), false)) {
       // Calculate it ourselves
       if (opt_morenotices) {
@@ -3021,16 +3021,16 @@ static bool submit_upstream_work(struct work *work, CURL *curl, char *curl_err_s
 
   cgpu = get_thr_cgpu(thr_id);
 
-  if (safe_cmp(work->pool->algorithm.name, "credits")) {
-    endian_flip128(work->data, work->data);
-  } else {
+  if (work->pool->algorithm.type == ALGO_CRE) {
     endian_flip168(work->data, work->data);
+  } else {
+    endian_flip128(work->data, work->data);
   }
 
   /* build hex string - Make sure to restrict to 80 bytes for Neoscrypt */
   int datasize = 128;
-  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt")) datasize = 80;
-  else if (!safe_cmp(work->pool->algorithm.name, "credits")) datasize = 168;
+  if (work->pool->algorithm.type == ALGO_NEOSCRYPT) datasize = 80;
+  else if (work->pool->algorithm.type == ALGO_CRE) datasize = 168;
   hexstr = bin2hex(work->data, datasize);
 
   /* build JSON-RPC request */
@@ -3400,7 +3400,7 @@ static void calc_diff(struct work *work, double known)
 
     applog(LOG_DEBUG, "calc_diff() algorithm = %s", work->pool->algorithm.name);
     // Neoscrypt
-    if (!safe_cmp(work->pool->algorithm.name, "neoscrypt")) {
+    if (work->pool->algorithm.type == ALGO_NEOSCRYPT) {
       dcut64 = (double)*((uint64_t *)(work->target + 22));
     }
     else {
@@ -5574,7 +5574,7 @@ static void *stratum_sthread(void *userdata)
     applog(LOG_DEBUG, "stratum_sthread() algorithm = %s", pool->algorithm.name);
 
     // Neoscrypt is little endian
-    if (!safe_cmp(pool->algorithm.name, "neoscrypt")) {
+    if (!pool->algorithm.type == ALGO_NEOSCRYPT) {
       nonce = htobe32(*((uint32_t *)(work->data + 76)));
       //*((uint32_t *)nonce2) = htole32(work->nonce2);
     }
@@ -6078,7 +6078,7 @@ static void gen_stratum_work(struct pool *pool, struct work *work)
   applog(LOG_DEBUG, "[THR%d] gen_stratum_work() - algorithm = %s", work->thr_id, pool->algorithm.name);
 
   // Different for Neoscrypt because of Little Endian
-  if (!safe_cmp(pool->algorithm.name, "neoscrypt")) {
+  if (!pool->algorithm.type == ALGO_NEOSCRYPT) {
     /* Incoming data is in little endian. */
     memcpy(merkle_root, merkle_sha, 32);
 
@@ -6140,7 +6140,7 @@ static void gen_stratum_work(struct pool *pool, struct work *work)
   }
 
   // For Neoscrypt use set_target_neoscrypt() function
-  if (!safe_cmp(pool->algorithm.name, "neoscrypt")) {
+  if (!pool->algorithm.type == ALGO_NEOSCRYPT) {
     set_target_neoscrypt(work->target, work->sdiff, work->thr_id);
   } else {
     calc_midstate(work);
@@ -6238,7 +6238,7 @@ static void apply_initial_gpu_settings(struct pool *pool)
 
   //thread-concurrency
   // neoscrypt - if not specified set TC to 0 so that TC will be calculated by intensity settings
-  if (!safe_cmp(pool->algorithm.name, "neoscrypt")) {
+  if (!pool->algorithm.type == ALGO_NEOSCRYPT) {
     opt = ((empty_string(pool->thread_concurrency))?"0":get_pool_setting(pool->thread_concurrency, default_profile.thread_concurrency));
   }
   // otherwise use pool/profile setting or default to default profile setting
@@ -6416,7 +6416,7 @@ static unsigned long compare_pool_settings(struct pool *oldpool, struct pool *ne
 
   //thread-concurrency
   // neoscrypt - if not specified set TC to 0 so that TC will be calculated by intensity settings
-  if (!safe_cmp(newpool->algorithm.name, "neoscrypt")) {
+  if (newpool->algorithm.type == ALGO_NEOSCRYPT) {
     opt2 = ((empty_string(newpool->thread_concurrency))?"0":get_pool_setting(newpool->thread_concurrency, default_profile.thread_concurrency));
   }
   // otherwise use pool/profile setting or default to default profile setting
@@ -6562,7 +6562,7 @@ static void apply_switcher_options(unsigned long options, struct pool *pool)
   if(opt_isset(options, SWITCHER_APPLY_TC))
   {
     // neoscrypt - if not specified set TC to 0 so that TC will be calculated by intensity settings
-    if (!safe_cmp(pool->algorithm.name, "neoscrypt")) {
+    if (!pool->algorithm.type == ALGO_NEOSCRYPT) {
       opt = ((empty_string(pool->thread_concurrency))?"0":get_pool_setting(pool->thread_concurrency, default_profile.thread_concurrency));
     }
     // otherwise use pool/profile setting or default to default profile setting
@@ -6801,7 +6801,7 @@ static void get_work_prepare_thread(struct thr_info *mythr, struct work *work)
     if(opt_isset(pool_switch_options, SWITCHER_APPLY_TC))
     {
       // neoscrypt - if not specified set TC to 0 so that TC will be calculated by intensity settings
-      if (!safe_cmp(work->pool->algorithm.name, "neoscrypt")) {
+      if (work->pool->algorithm.type == ALGO_NEOSCRYPT) {
         opt = ((empty_string(work->pool->thread_concurrency))?"0":get_pool_setting(work->pool->thread_concurrency, default_profile.thread_concurrency));
       }
       // otherwise use pool/profile setting or default to default profile setting
@@ -7071,7 +7071,7 @@ void inc_hw_errors(struct thr_info *thr)
 static void rebuild_nonce(struct work *work, uint32_t nonce)
 {
   uint32_t nonce_pos = 76;
-  if (!safe_cmp(work->pool->algorithm.name, "credits")) nonce_pos = 140;
+  if (work->pool->algorithm.type == ALGO_CRE) nonce_pos = 140;
 
   uint32_t *work_nonce = (uint32_t *)(work->data + nonce_pos);
 
@@ -7089,10 +7089,8 @@ bool test_nonce(struct work *work, uint32_t nonce)
   rebuild_nonce(work, nonce);
 
   // for Neoscrypt, the diff1targ value is in work->target
-  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt") || !safe_cmp(work->pool->algorithm.name, "pluck")
-    || !safe_cmp(work->pool->algorithm.name, "yescrypt")
-    || !safe_cmp(work->pool->algorithm.name, "yescrypt-multi")
-  ) {
+  if (work->pool->algorithm.type == ALGO_NEOSCRYPT || work->pool->algorithm.type == ALGO_PLUCK
+    || work->pool->algorithm.type == ALGO_YESCRYPT || work->pool->algorithm.type == ALGO_YESCRYPT_MULTI) {
     diff1targ = ((uint32_t *)work->target)[7];
   }
   else {
@@ -7234,7 +7232,7 @@ static void hash_sole_work(struct thr_info *mythr)
     } else if (drv->working_diff > work->work_difficulty)
       drv->working_diff = work->work_difficulty;
 
-    if (!safe_cmp(work->pool->algorithm.name, "neoscrypt")) {
+    if (work->pool->algorithm.type == ALGO_NEOSCRYPT) {
       set_target_neoscrypt(work->device_target, work->device_diff, work->thr_id);
     } else {
       set_target(work->device_target, work->device_diff, work->pool->algorithm.diff_multiplier2, work->thr_id);
