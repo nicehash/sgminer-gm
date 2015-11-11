@@ -29,9 +29,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "algorithm/sysendian.h"
+#include "../algorithm/sysendian.h"
 
-#include "sph/sha256_Y.h"
+#include "sha256_Y.h"
 
 /*
  * Encode a length len/4 vector of (uint32_t) into a length len vector of
