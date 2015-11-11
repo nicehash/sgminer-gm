@@ -23,7 +23,10 @@ typedef struct __clState {
   cl_mem CLbuffer0;
   cl_mem MidstateBuf;
   cl_mem padbuffer8;
-  unsigned char cldata[80];
+  cl_mem buffer1;
+  cl_mem buffer2;
+  cl_mem buffer3;
+  unsigned char cldata[168];
   bool goffset;
   cl_uint vwidth;
   size_t max_work_size;

@@ -58,15 +58,19 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
 
     //========== Initializing the Memory Matrix and pointers to it =============//
     //Tries to allocate enough space for the whole memory matrix
+
+    const int64_t ROW_LEN_INT64 = BLOCK_LEN_INT64 * nCols;
+    const int64_t ROW_LEN_BYTES = ROW_LEN_INT64 * 8;
+
     i = (int64_t) ((int64_t) nRows * (int64_t) ROW_LEN_BYTES);
-	uint64_t *wholeMatrix = (uint64_t*)malloc(i);
+    uint64_t *wholeMatrix = malloc(i);
     if (wholeMatrix == NULL) {
       return -1;
     }
 	memset(wholeMatrix, 0, i);
 
     //Allocates pointers to each row of the matrix
-	uint64_t **memMatrix = (uint64_t**)malloc(nRows * sizeof (uint64_t*));
+    uint64_t **memMatrix = malloc(nRows * sizeof (uint64_t*));
     if (memMatrix == NULL) {
       return -1;
     }
@@ -118,7 +122,7 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
 
     //======================= Initializing the Sponge State ====================//
     //Sponge state: 16 uint64_t, BLOCK_LEN_INT64 words of them for the bitrate (b) and the remainder for the capacity (c)
-	uint64_t *state = (uint64_t*)malloc(16 * sizeof (uint64_t));
+    uint64_t *state = malloc(16 * sizeof (uint64_t));
     if (state == NULL) {
       return -1;
     }
@@ -130,16 +134,16 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
     ptrWord = wholeMatrix;
     for (i = 0; i < nBlocksInput; i++) {
       absorbBlockBlake2Safe(state, ptrWord); //absorbs each block of pad(pwd || salt || basil)
-      ptrWord += BLOCK_LEN_BLAKE2_SAFE_BYTES; //goes to next block of pad(pwd || salt || basil)
+      ptrWord += BLOCK_LEN_BLAKE2_SAFE_INT64; //goes to next block of pad(pwd || salt || basil)
     }
 
     //Initializes M[0] and M[1]
-    reducedSqueezeRow0(state, memMatrix[0]); //The locally copied password is most likely overwritten here
-    reducedDuplexRow1(state, memMatrix[0], memMatrix[1]);
+    reducedSqueezeRow0(state, memMatrix[0], nCols); //The locally copied password is most likely overwritten here
+    reducedDuplexRow1(state, memMatrix[0], memMatrix[1], nCols);
 
     do {
       //M[row] = rand; //M[row*] = M[row*] XOR rotW(rand)
-      reducedDuplexRowSetup(state, memMatrix[prev], memMatrix[rowa], memMatrix[row]);
+      reducedDuplexRowSetup(state, memMatrix[prev], memMatrix[rowa], memMatrix[row], nCols);
 
 
       //updates the value of row* (deterministically picked during Setup))
@@ -172,7 +176,7 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
   	    //------------------------------------------------------------------------------------------
 
   	    //Performs a reduced-round duplexing operation over M[row*] XOR M[prev], updating both M[row*] and M[row]
-  	    reducedDuplexRow(state, memMatrix[prev], memMatrix[rowa], memMatrix[row]);
+  	    reducedDuplexRow(state, memMatrix[prev], memMatrix[rowa], memMatrix[row], nCols);
 
   	    //update prev: it now points to the last row ever computed
   	    prev = row;
@@ -192,7 +196,7 @@ int LYRA2(void *K, uint64_t kLen, const void *pwd, uint64_t pwdlen, const void *
     absorbBlock(state, memMatrix[rowa]);
 
     //Squeezes the key
-    squeeze(state, (unsigned char*)K, kLen);
+    squeeze(state, K, kLen);
     //==========================================================================/
 
     //========================= Freeing the memory =============================//

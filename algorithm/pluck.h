@@ -3,6 +3,8 @@
 
 #include "miner.h"
 #define PLUCK_SCRATCHBUF_SIZE (128 * 1024)
+#define PLUCK_SECBUF_SIZE (64 * 1024)
+
 extern int pluck_test(unsigned char *pdata, const unsigned char *ptarget,
 			uint32_t nonce);
 extern void pluck_regenhash(struct work *work);

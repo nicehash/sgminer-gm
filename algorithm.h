@@ -13,6 +13,7 @@
 
 typedef enum {
   ALGO_UNK,
+  ALGO_CRE,
   ALGO_SCRYPT,
   ALGO_NSCRYPT,
   ALGO_X11,
@@ -29,7 +30,10 @@ typedef enum {
   ALGO_NEOSCRYPT,
   ALGO_WHIRLPOOLX,
   ALGO_LYRA2RE,
-  ALGO_PLUCK
+  ALGO_LYRA2REv2,
+  ALGO_PLUCK,
+  ALGO_YESCRYPT,
+  ALGO_YESCRYPT_MULTI,
 } algorithm_type_t;
 
 extern const char *algorithm_type_str[];

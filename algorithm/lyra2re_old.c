@@ -36,8 +36,6 @@
 #include "sph/sph_groestl.h"
 #include "sph/sph_skein.h"
 #include "sph/sph_keccak.h" 
-#include "sph/sph_bmw.h"
-#include "sph/sph_cubehash.h"
 #include "lyra2.h"
 
 /*
@@ -54,13 +52,12 @@ be32enc_vect(uint32_t *dst, const uint32_t *src, uint32_t len)
 }
 
 
-inline void lyra2rehash(void *state, const void *input)
+inline void lyra2rehash_old(void *state, const void *input)
 {
     sph_blake256_context     ctx_blake;
-    sph_bmw256_context       ctx_bmw;
+    sph_groestl256_context   ctx_groestl;
     sph_keccak256_context    ctx_keccak;
     sph_skein256_context     ctx_skein;
-    sph_cubehash256_context  ctx_cube;
 
     uint32_t hashA[8], hashB[8];
 
@@ -72,23 +69,16 @@ inline void lyra2rehash(void *state, const void *input)
     sph_keccak256 (&ctx_keccak,hashA, 32);
     sph_keccak256_close(&ctx_keccak, hashB);
 
-    sph_cubehash256_init(&ctx_cube);
-    sph_cubehash256(&ctx_cube, hashB, 32);
-    sph_cubehash256_close(&ctx_cube, hashA);
-
-    LYRA2(hashB, 32, hashA, 32, hashA, 32, 1, 4, 4);
+    LYRA2(hashA, 32, hashB, 32, hashB, 32, 1, 8, 8);
 
     sph_skein256_init(&ctx_skein);
-    sph_skein256 (&ctx_skein, hashB, 32);
-    sph_skein256_close(&ctx_skein, hashA);
+    sph_skein256 (&ctx_skein, hashA, 32);
+    sph_skein256_close(&ctx_skein, hashB);
 
-    sph_cubehash256_init(&ctx_cube);
-    sph_cubehash256(&ctx_cube, hashA, 32);
-    sph_cubehash256_close(&ctx_cube, hashB);
 
-    sph_bmw256_init(&ctx_bmw);
-    sph_bmw256 (&ctx_bmw, hashB, 32);
-    sph_bmw256_close(&ctx_bmw, hashA);
+    sph_groestl256_init(&ctx_groestl);
+    sph_groestl256 (&ctx_groestl, hashB, 32);
+    sph_groestl256_close(&ctx_groestl, hashA);
 
     memcpy(state, hashA, 32);
 }
@@ -97,14 +87,14 @@ static const uint32_t diff1targ = 0x0000ffff;
 
 
 /* Used externally as confirmation of correct OCL code */
-int lyra2re_test(unsigned char *pdata, const unsigned char *ptarget, uint32_t nonce)
+int lyra2reold_test(unsigned char *pdata, const unsigned char *ptarget, uint32_t nonce)
 {
 	uint32_t tmp_hash7, Htarg = le32toh(((const uint32_t *)ptarget)[7]);
 	uint32_t data[20], ohash[8];
 
 	be32enc_vect(data, (const uint32_t *)pdata, 19);
 	data[19] = htobe32(nonce);
-	lyra2rehash(ohash, data);
+	lyra2rehash_old(ohash, data);
 	tmp_hash7 = be32toh(ohash[7]);
 
 	applog(LOG_DEBUG, "htarget %08lx diff1 %08lx hash %08lx",
@@ -118,7 +108,7 @@ int lyra2re_test(unsigned char *pdata, const unsigned char *ptarget, uint32_t no
 	return 1;
 }
 
-void lyra2re_regenhash(struct work *work)
+void lyra2reold_regenhash(struct work *work)
 {
         uint32_t data[20];
         uint32_t *nonce = (uint32_t *)(work->data + 76);
@@ -126,10 +116,10 @@ void lyra2re_regenhash(struct work *work)
 
         be32enc_vect(data, (const uint32_t *)work->data, 19);
         data[19] = htobe32(*nonce);
-        lyra2rehash(ohash, data);
+        lyra2rehash_old(ohash, data);
 }
 
-bool scanhash_lyra2re(struct thr_info *thr, const unsigned char __maybe_unused *pmidstate,
+bool scanhash_lyra2reold(struct thr_info *thr, const unsigned char __maybe_unused *pmidstate,
 		     unsigned char *pdata, unsigned char __maybe_unused *phash1,
 		     unsigned char __maybe_unused *phash, const unsigned char *ptarget,
 		     uint32_t max_nonce, uint32_t *last_nonce, uint32_t n)
@@ -147,7 +137,7 @@ bool scanhash_lyra2re(struct thr_info *thr, const unsigned char __maybe_unused *
 
 		*nonce = ++n;
 		data[19] = (n);
-		lyra2rehash(ostate, data);
+		lyra2rehash_old(ostate, data);
 		tmp_hash7 = (ostate[7]);
 
 		applog(LOG_INFO, "data7 %08lx",
