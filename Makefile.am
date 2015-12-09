@@ -18,10 +18,10 @@ sgminer_LDADD    = $(DLOPEN_FLAGS) @LIBCURL_LIBS@ @JANSSON_LIBS@ @PTHREAD_LIBS@ 
 		  @OPENCL_LIBS@ @NCURSES_LIBS@ @PDCURSES_LIBS@ @WS2_LIBS@ \
 		  @MM_LIBS@ @RT_LIBS@ @MATH_LIBS@ lib/libgnu.a ccan/libccan.a sph/libsph.a
 
-sgminer_CPPFLAGS += -I$(top_builddir)/lib -I$(top_srcdir)/lib @OPENCL_FLAGS@
+sgminer_CPPFLAGS += -I$(top_builddir)/lib -I$(top_srcdir)/lib @OPENCL_FLAGS@ @LIBCURL_CFLAGS@
 
-if !HAVE_WINDOWS
-sgminer_CPPFLAGS += @LIBCURL_CFLAGS@
+if HAVE_WINDOWS
+sgminer_LDFLAGS += -all-static
 endif
 
 sgminer_CPPFLAGS += $(ADL_CPPFLAGS)

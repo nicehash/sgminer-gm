@@ -288,6 +288,7 @@ else
 	LIBCURL_LIBS=""
 fi
 AC_SUBST(LIBCURL_LIBS)
+AC_SUBST(LIBCURL_CFLAGS)
 
 # Enable or disable use of git version in version string
 AC_MSG_CHECKING(whether to use git version if available)
