@@ -10,6 +10,6 @@
 
 extern void precalc_hash(dev_blk_ctx *blk, uint32_t *state, uint32_t *data);
 extern void postcalc_hash_async(struct thr_info *thr, struct work *work, uint32_t *res);
-extern void precalc_hash_blake256(dev_blk_ctx *blk, uint32_t *state, uint32_t *data);
+extern void precalc_hash_blake256(dev_blk_ctx *blk, uint32_t *state, uint32_t *data, int blake256_rounds);
 
 #endif /*FINDNONCE_H*/

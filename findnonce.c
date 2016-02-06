@@ -235,15 +235,13 @@ void postcalc_hash_async(struct thr_info *thr, struct work *work, uint32_t *res)
   }
 }
 
-// BLAKE 256 14 rounds (standard)
-
 typedef struct
 {
   uint32_t h[8];
   uint32_t t;
 } blake_state256;
 
-#define NB_ROUNDS32 14
+int NB_ROUNDS32;
 
 const uint8_t blake_sigma[][16] =
 {
@@ -348,8 +346,10 @@ void blake256_update(blake_state256 *S, const uint32_t *in)
   blake256_compress_block(S, m);
 }
 
-void precalc_hash_blake256(dev_blk_ctx *blk, uint32_t *state, uint32_t *data)
+void precalc_hash_blake256(dev_blk_ctx *blk, uint32_t *state, uint32_t *data, int blake256_rounds)
 {
+  NB_ROUNDS32 = blake256_rounds;
+
   blake_state256 S;
   blake256_init(&S);
   blake256_update(&S, data);
