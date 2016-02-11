@@ -1334,7 +1334,7 @@ static void apiversion(struct io_data *io_data, __maybe_unused SOCKETTYPE c, __m
   io_open = io_add(io_data, isjson ? COMSTR JSON_VERSION : _VERSION COMSTR);
 
   root = api_add_string(root, "Miner", PACKAGE " " VERSION, false);
-  root = api_add_string(root, "CGMiner", CGMINER_VERSION, false);
+  root = api_add_string(root, "SGMiner", CGMINER_VERSION, false);
   root = api_add_const(root, "API", APIVERSION, false);
 
   root = print_data(root, buf, isjson, false);

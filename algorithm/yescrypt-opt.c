@@ -99,7 +99,7 @@ alloc_region(yescrypt_region_t * region, size_t size)
 	if (size + 63 < size) {
 		errno = ENOMEM;
 	}
-	else if ((base = malloc(size + 63)) != NULL) {
+	else if ((base = (uint8_t *)malloc(size + 63)) != NULL) {
 		aligned = base + 63;
 		aligned -= (uintptr_t)aligned & 63;
 	}
@@ -520,7 +520,7 @@ smix1(uint64_t * B, size_t r, uint64_t N, yescrypt_flags_t flags,
 	uint64_t * XY, uint64_t * S)
 {
 	void (*blockmix)(const uint64_t *, uint64_t *, uint64_t *, size_t) = (S ? blockmix_pwxform : blockmix_salsa8);
-	const uint64_t * VROM = shared->shared1.aligned;
+	const uint64_t * VROM = (uint64_t *)shared->shared1.aligned;
 	uint32_t VROM_mask = shared->mask1;
 	size_t s = 16 * r;
 	uint64_t * X = V;
@@ -671,7 +671,7 @@ smix2(uint64_t * B, size_t r, uint64_t N, uint64_t Nloop,
 	
 	void (*blockmix)(const uint64_t *, uint64_t *, uint64_t *, size_t) =
 		(S ? blockmix_pwxform : blockmix_salsa8);
-	const uint64_t * VROM = shared->shared1.aligned;
+	const uint64_t * VROM = (uint64_t *)shared->shared1.aligned;
 	uint32_t VROM_mask = shared->mask1 | 1;
 	size_t s = 16 * r;
 	yescrypt_flags_t rw = flags & YESCRYPT_RW;
@@ -835,7 +835,7 @@ smix(uint64_t * B, size_t r, uint64_t N, uint32_t p, uint32_t t,
 		uint64_t * Sp = S ? &S[i * S_SIZE_ALL] : S;
 
 		if (Sp) 
-			smix1(Bp, 1, S_SIZE_ALL / 16, flags & ~YESCRYPT_PWXFORM,Sp, NROM, shared, XYp, NULL);
+			smix1(Bp, 1, S_SIZE_ALL / 16, (yescrypt_flags_t)flags & ~YESCRYPT_PWXFORM,Sp, NROM, shared, XYp, NULL);
 
 	
 

@@ -187,7 +187,7 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
 	cl_platform_id platform = NULL;
 	struct cgpu_info *cgpu = &gpus[gpu];
 	_clState *clState = (_clState *)calloc(1, sizeof(_clState));
-	cl_uint preferred_vwidth, slot = 0, cpnd = 0, numDevices = clDevicesNum();
+	cl_uint preferred_vwidth, numDevices = clDevicesNum();
 	cl_device_id *devices = (cl_device_id *)alloca(numDevices * sizeof(cl_device_id));
 	build_kernel_data *build_data = (build_kernel_data *)alloca(sizeof(struct _build_kernel_data));
 	char **pbuff = (char **)alloca(sizeof(char *) * numDevices), filename[256];
