@@ -1366,7 +1366,7 @@ static bool opencl_thread_init(struct thr_info *thr)
 
 static bool opencl_prepare_work(struct thr_info __maybe_unused *thr, struct work *work)
 {
-  if (work->pool->algorithm.type == ALGO_LYRA2RE || work->pool->algorithm.type == ALGO_LYRA2REv2) {
+  if (work->pool->algorithm.type == ALGO_LYRA2RE || work->pool->algorithm.type == ALGO_LYRA2REV2) {
     work->blk.work = work;
     precalc_hash_blake256(&work->blk, 0, (uint32_t *)(work->data));
   }

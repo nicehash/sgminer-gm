@@ -37,7 +37,7 @@
 #include "algorithm/neoscrypt.h"
 #include "algorithm/pluck.h"
 #include "algorithm/yescrypt.h"
-#include "algorithm/lyra2re.h"
+#include "algorithm/lyra2rev2.h"
 
 /* FIXME: only here for global config vars, replace with configuration.h
  * or similar as soon as config is in a struct instead of littered all
@@ -586,7 +586,7 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
   }
 
   // Lyra2re v2 TC
-  else if (cgpu->algorithm.type == ALGO_LYRA2REv2 && !cgpu->opt_tc) {
+  else if (cgpu->algorithm.type == ALGO_LYRA2REV2 && !cgpu->opt_tc) {
     size_t glob_thread_count;
     long max_int;
     unsigned char type = 0;
@@ -797,7 +797,7 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
       applog(LOG_DEBUG, "yescrypt buffer sizes: %lu RW, %lu R", (unsigned long)bufsize, (unsigned long)readbufsize);
       // scrypt/n-scrypt
     }
-    else if (algorithm->type == ALGO_LYRA2REv2) {
+    else if (algorithm->type == ALGO_LYRA2REV2) {
       /* The scratch/pad-buffer needs 32kBytes memory per thread. */
       bufsize = LYRA_SCRATCHBUF_SIZE * cgpu->thread_concurrency;
       buf1size = 4* 8 * cgpu->thread_concurrency; //matrix
@@ -855,7 +855,7 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
         return NULL;
       }
     }
-    else if (algorithm->type == ALGO_LYRA2REv2) {
+    else if (algorithm->type == ALGO_LYRA2REV2) {
       // need additionnal buffers
       clState->buffer1 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf1size, NULL, &status);
       if (status != CL_SUCCESS && !clState->buffer1) {
