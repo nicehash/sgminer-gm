@@ -1051,7 +1051,7 @@ void copy_algorithm_settings(algorithm_t* dest, const char* algo)
   // Find algorithm settings and copy
   for (src = algos; src->name; src++)
   {
-    if (strcmp(src->name, algo) == 0)
+    if (strcasecmp(src->name, algo) == 0)
     {
       strcpy(dest->name, src->name);
       dest->kernelfile = src->kernelfile;
