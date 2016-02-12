@@ -62,8 +62,32 @@ inline void blake256hash(void *state, const void *input)
   sph_blake256_close(&ctx_blake, state);
 }
 
-static const uint32_t diff1targ = 0x0000ffff;
+void precalc_hash_blake256(dev_blk_ctx *blk, uint32_t *state, uint32_t *pdata)
+{
+	sph_blake256_context ctx_blake;
+	uint32_t data[16];
 
+	be32enc_vect(data, (const uint32_t *)pdata, 16);
+
+	sph_blake256_init(&ctx_blake);
+	sph_blake256(&ctx_blake, data, 64);
+
+	blk->ctx_a = ctx_blake.H[0];
+	blk->ctx_b = ctx_blake.H[1];
+	blk->ctx_c = ctx_blake.H[2];
+	blk->ctx_d = ctx_blake.H[3];
+	blk->ctx_e = ctx_blake.H[4];
+	blk->ctx_f = ctx_blake.H[5];
+	blk->ctx_g = ctx_blake.H[6];
+	blk->ctx_h = ctx_blake.H[7];
+
+	blk->cty_a = pdata[16];
+	blk->cty_b = pdata[17];
+	blk->cty_c = pdata[18];
+}
+
+
+static const uint32_t diff1targ = 0x0000ffff;
 
 /* Used externally as confirmation of correct OCL code */
 int blake256_test(unsigned char *pdata, const unsigned char *ptarget, uint32_t nonce)
