@@ -2625,7 +2625,7 @@ static void curses_print_devstatus(struct cgpu_info *cgpu, int count)
   if (devcursor + count > LINES - 2)
     return;
 
-  if (count >= most_devices)
+  if (count >= (opt_removedisabled ? most_devices : total_devices))
     return;
 
   if (cgpu->dev_start_tv.tv_sec == 0)
@@ -2745,7 +2745,7 @@ static void switch_logsize(bool __maybe_unused newdevs)
     if (opt_compact) {
       logstart = devcursor + 1;
     } else {
-      logstart = devcursor + most_devices + 1;
+      logstart = devcursor + (opt_removedisabled ? most_devices : total_devices) + 1;
     }
     logcursor = logstart + 1;
 #ifdef WIN32
@@ -8873,7 +8873,7 @@ int main(int argc, char *argv[])
   rd_unlock(&devices_lock);
 
   if (!opt_compact) {
-    logstart += most_devices;
+    logstart += (opt_removedisabled ? most_devices : total_devices);
     logcursor = logstart + 1;
 #ifdef HAVE_CURSES
     check_winsizes();
