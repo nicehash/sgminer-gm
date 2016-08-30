@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <x86intrin.h>
 
 #include "config.h"
 #include "miner.h"
@@ -26,7 +25,6 @@ typedef union _Node
 	uint8_t bytes[16 * 4];
 	uint32_t words[16];
 	uint64_t double_words[16 / 2];
-	__m128i xmm[16/4];
 } Node;
 
 uint32_t EthCalcEpochNumber(uint8_t *SeedHash)
@@ -51,12 +49,6 @@ Node CalcDAGItem(const Node *CacheInputNodes, uint32_t NodeCount, uint32_t NodeI
 	DAGNode.words[0] ^= NodeIdx;
 
 	SHA3_512(DAGNode.bytes, DAGNode.bytes, sizeof(Node));
-	
-	__m128i const fnv_prime = _mm_set1_epi32(FNV_PRIME);
-	__m128i xmm0 = DAGNode.xmm[0];
-	__m128i xmm1 = DAGNode.xmm[1];
-	__m128i xmm2 = DAGNode.xmm[2];
-	__m128i xmm3 = DAGNode.xmm[3];
 	
 	for(uint32_t i = 0; i < 256; ++i)
 	{

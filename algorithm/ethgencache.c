@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <x86intrin.h>
 
 #include "sph/sph_keccak.h"
 #include "algorithm/ethash.h"
@@ -10,7 +9,6 @@ typedef union node
 	uint8_t bytes[16 * 4];
 	uint32_t words[16];
 	uint64_t double_words[16 / 2];
-	__m128i xmm[16/4];
 } node;
 
 // Output (cache_nodes) MUST have at least cache_size bytes
