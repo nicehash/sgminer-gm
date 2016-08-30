@@ -36,8 +36,6 @@ void EthGenerateCache(void *cache_nodes_in, const uint8_t *seedhash, uint64_t ca
 				data.words[w] ^= cache_nodes[idx].words[w];
 			}
 			
-			//for(uint32_t w = 0; w < (16 >> 2); ++w) _mm_xor_si128(data.xmm[w], cache_nodes[idx].xmm[w]);
-			
 			SHA3_512(cache_nodes[i].bytes, data.bytes, sizeof(data));
 		}
 	}	
