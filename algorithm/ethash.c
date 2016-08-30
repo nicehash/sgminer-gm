@@ -63,20 +63,11 @@ Node CalcDAGItem(const Node *CacheInputNodes, uint32_t NodeCount, uint32_t NodeI
 		uint32_t parent_index = fnv(NodeIdx ^ i, DAGNode.words[i % 16]) % NodeCount;
 		Node const *parent = CacheInputNodes + parent_index; //&cache_nodes[parent_index];
 		
-		xmm0 = _mm_mullo_epi32(xmm0, fnv_prime);
-		xmm1 = _mm_mullo_epi32(xmm1, fnv_prime);
-		xmm2 = _mm_mullo_epi32(xmm2, fnv_prime);
-		xmm3 = _mm_mullo_epi32(xmm3, fnv_prime);
-		xmm0 = _mm_xor_si128(xmm0, parent->xmm[0]);
-		xmm1 = _mm_xor_si128(xmm1, parent->xmm[1]);
-		xmm2 = _mm_xor_si128(xmm2, parent->xmm[2]);
-		xmm3 = _mm_xor_si128(xmm3, parent->xmm[3]);
-
-		// have to write to ret as values are used to compute index
-		DAGNode.xmm[0] = xmm0;
-		DAGNode.xmm[1] = xmm1;
-		DAGNode.xmm[2] = xmm2;
-		DAGNode.xmm[3] = xmm3;
+		for(int i = 0; i < 16; ++i)
+		{
+			DAGNode.words[i] *= FNV_PRIME;
+			DAGNode.words[i] ^= parent->words[i];
+		}
 	}
 
 	SHA3_512(DAGNode.bytes, DAGNode.bytes, sizeof(Node));
