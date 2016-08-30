@@ -183,14 +183,14 @@ static cl_int create_opencl_command_queue(cl_command_queue *command_queue, cl_co
 _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *algorithm)
 {
   cl_int status = 0;
-	size_t compute_units = 0;
-	cl_platform_id platform = NULL;
-	struct cgpu_info *cgpu = &gpus[gpu];
-	_clState *clState = (_clState *)calloc(1, sizeof(_clState));
-	cl_uint preferred_vwidth, numDevices = clDevicesNum();
-	cl_device_id *devices = (cl_device_id *)alloca(numDevices * sizeof(cl_device_id));
-	build_kernel_data *build_data = (build_kernel_data *)alloca(sizeof(struct _build_kernel_data));
-	char **pbuff = (char **)alloca(sizeof(char *) * numDevices), filename[256];
+  size_t compute_units = 0;
+  cl_platform_id platform = NULL;
+  struct cgpu_info *cgpu = &gpus[gpu];
+  _clState *clState = (_clState *)calloc(1, sizeof(_clState));
+  cl_uint preferred_vwidth, numDevices = clDevicesNum();
+  cl_device_id *devices = (cl_device_id *)alloca(numDevices * sizeof(cl_device_id));
+  build_kernel_data *build_data = (build_kernel_data *)alloca(sizeof(struct _build_kernel_data));
+  char **pbuff = (char **)alloca(sizeof(char *) * numDevices), filename[256];
 
   // sanity check
   if (!get_opencl_platform(opt_platform_id, &platform)) {
@@ -736,7 +736,18 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
     applog(LOG_ERR, "Error %d: Creating Kernel from program. (clCreateKernel)", status);
     return NULL;
   }
-
+  
+  if(algorithm->type == ALGO_ETHASH)
+  {
+	  clState->GenerateDAG = clCreateKernel(clState->program, "GenerateDAG", &status);
+	  
+	  if(status != CL_SUCCESS)
+	  {
+		  applog(LOG_ERR, "Error %d while creating DAG generation kernel.", status);
+		  return(NULL);
+	  }
+  }
+  
   clState->n_extra_kernels = algorithm->n_extra_kernels;
   if (clState->n_extra_kernels > 0) {
     unsigned int i;
@@ -880,13 +891,20 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
       return NULL;
     }
   }
-
+  
+	if(algorithm->type == ALGO_ETHASH)
+	{
+		readbufsize = 32UL;
+		clState->DAG = clState->EthCache = NULL;
+	}
   applog(LOG_DEBUG, "Using read buffer sized %lu", (unsigned long)readbufsize);
   clState->CLbuffer0 = clCreateBuffer(clState->context, CL_MEM_READ_ONLY, readbufsize, NULL, &status);
   if (status != CL_SUCCESS) {
     applog(LOG_ERR, "Error %d: clCreateBuffer (CLbuffer0)", status);
     return NULL;
   }
+  
+  clState->devid = cgpu->device_id;
 
   applog(LOG_DEBUG, "Using output buffer sized %lu", BUFFERSIZE);
   clState->outputBuffer = clCreateBuffer(clState->context, CL_MEM_WRITE_ONLY, BUFFERSIZE, NULL, &status);

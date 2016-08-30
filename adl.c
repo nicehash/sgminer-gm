@@ -1207,7 +1207,6 @@ int set_fanspeed(int gpu, int iFanSpeed)
   return ret;
 }
 
-#ifdef HAVE_CURSES
 int set_powertune(int gpu, int iPercentage)
 {
   struct gpu_adl *ga;
@@ -1229,7 +1228,6 @@ int set_powertune(int gpu, int iPercentage)
   unlock_adl();
   return ret;
 }
-#endif
 
 /* Returns whether the fanspeed is optimal already or not. The fan_window bool
  * tells us whether the current fanspeed is in the target range for fanspeeds.

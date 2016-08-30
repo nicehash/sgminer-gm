@@ -1369,6 +1369,7 @@ static bool opencl_prepare_work(struct thr_info __maybe_unused *thr, struct work
   work->blk.work = work;
   if (work->pool->algorithm.precalc_hash) work->pool->algorithm.precalc_hash(&work->blk, 0, (uint32_t *)(work->data));
   thr->pool_no = work->pool->pool_no;
+  
   return true;
 }
 
@@ -1410,7 +1411,7 @@ static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
     memcpy(&(gpu->tv_gpustart), &tv_gpuend, sizeof(struct timeval));
     gpu->intervals = 0;
   }
-
+  
   set_threads_hashes(clState->vwidth, clState->compute_shaders, &hashes, globalThreads, localThreads[0],
     &gpu->intensity, &gpu->xintensity, &gpu->rawintensity, &gpu->algorithm);
   if (hashes > gpu->max_hashes)
