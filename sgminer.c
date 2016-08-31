@@ -3164,7 +3164,7 @@ static bool submit_upstream_work(struct work *work, CURL *curl, char *curl_err_s
   if(work->pool->algorithm.type == ALGO_ETHASH)
   {
 	  s = (char *)malloc(sizeof(char) * (128 + 16 + 512));
-	  uint64_t tmp = __builtin_bswap64(work->Nonce);
+	  uint64_t tmp = bswap_64(work->Nonce);
 	  char *ASCIIMixHash = bin2hex(work->mixhash, 32);
 	  char *ASCIIPoWHash = bin2hex(work->data, 32);
 	  char *ASCIINonce = bin2hex(&tmp, 8);
@@ -5725,7 +5725,7 @@ static void *stratum_sthread(void *userdata)
 
       applog(LOG_DEBUG, "stratum_sthread() algorithm = %s", pool->algorithm.name);
 		
-      uint64_t tmp = __builtin_bswap64(work->Nonce);
+      uint64_t tmp = bswap_64(work->Nonce);
       char *ASCIIMixHash = bin2hex(work->mixhash, 32);
       char *ASCIIPoWHash = bin2hex(work->data, 32);
       char *ASCIINonce = bin2hex(&tmp, 8);
@@ -7339,11 +7339,13 @@ bool test_nonce(struct work *work, uint32_t nonce)
     || work->pool->algorithm.type == ALGO_YESCRYPT || work->pool->algorithm.type == ALGO_YESCRYPT_MULTI) {
     diff1targ = ((uint32_t *)work->target)[7];
   }
+  else if (work->pool->algorithm.type == ALGO_ETHASH) {
+    uint64_t target = *(uint64_t*) (work->device_target + 24);
+    return (bswap_64(*(uint64_t*) work->hash) <= target);
+  }
   else {
     diff1targ = work->pool->algorithm.diff1targ;
   }
-  
-  if(work->pool->algorithm.type == ALGO_ETHASH) return(true);
   
   return (le32toh(*hash_32) <= diff1targ);
 }
@@ -7380,17 +7382,13 @@ bool submit_tested_work(struct thr_info *thr, struct work *work)
   struct work *work_out;
   update_work_stats(thr, work);
   
-  if(work->pool->algorithm.type == ALGO_ETHASH)
-  {
-	  uint64_t LETarget = ((uint64_t *)work->target)[3];
-	  
-	  if(__builtin_bswap64(((uint64_t *)work->hash)[0]) > LETarget)
-	  {
-		  applog(LOG_INFO, "%s %d: Share above target", thr->cgpu->drv->name, thr->cgpu->device_id);
-		  applog(LOG_DEBUG, "Share failed 0x%016llX <= 0x%016llX.", __builtin_bswap64(((uint64_t *)work->hash)[3]), LETarget);
-		  return(false);
-	  }
-	  
+  if(work->pool->algorithm.type == ALGO_ETHASH) {
+    uint64_t LETarget = ((uint64_t *)work->target)[3];
+     
+    if(bswap_64(((uint64_t *)work->hash)[0]) > LETarget) {
+//      applog(LOG_INFO, "%s %d: Share above target", thr->cgpu->drv->name, thr->cgpu->device_id);
+      return(false);
+    }
   }
   else if (!fulltest(work->hash, work->target)) {
     applog(LOG_INFO, "%s %d: Share above target", thr->cgpu->drv->name,
@@ -7494,8 +7492,15 @@ static void hash_sole_work(struct thr_info *mythr)
 
     if (work->pool->algorithm.type == ALGO_NEOSCRYPT) {
       set_target_neoscrypt(work->device_target, work->device_diff, work->thr_id);
-    } else if(work->pool->algorithm.type != ALGO_ETHASH) {
-      set_target(work->device_target, work->device_diff, work->pool->algorithm.diff_multiplier2, work->thr_id);
+    } else { 
+      if (work->pool->algorithm.type == ALGO_ETHASH) {
+        double mult = (1 << 26);
+	work->device_diff = MIN(work->work_difficulty, mult); 
+        *(uint64_t*) (work->device_target + 24) = bits64 / work->device_diff;
+	work->device_diff /= mult;
+      }
+      else      
+        set_target(work->device_target, work->device_diff, work->pool->algorithm.diff_multiplier2, work->thr_id);
     }
 
     do {

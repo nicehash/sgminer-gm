@@ -131,6 +131,6 @@ void ethash_regenhash(struct work *work)
 	char *DbgHash = bin2hex(work->hash, 32);
 	
 	applog(LOG_DEBUG, "Regenhash result: %s.", DbgHash);
-	applog(LOG_DEBUG, "Last ulong: 0x%016llX.", __builtin_bswap64(*((uint64_t *)(work->hash + 0))));
+	applog(LOG_DEBUG, "Last ulong: 0x%016llX.", bswap_64(*((uint64_t *)(work->hash + 0))));
 	free(DbgHash);
 }

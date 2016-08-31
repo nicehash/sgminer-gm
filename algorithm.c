@@ -973,7 +973,7 @@ static cl_int queue_ethash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_u
 	cl_ulong DAGSize = EthGetDAGSize(blk->work->EpochNumber);
 	cl_uint DAGItems = (cl_uint)(DAGSize / 64);
 	
-	le_target = *(cl_ulong *)(blk->work->target + 24);
+	le_target = *(cl_ulong *)(blk->work->device_target + 24);
 	
 	// DO NOT flip80.
 	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 32, blk->work->data, 0, NULL, NULL);
@@ -1162,7 +1162,7 @@ static algorithm_settings_t algos[] = {
   { "blake256r14", ALGO_BLAKE,     "", 1, 1, 1, 0, 0, 0xFF, 0xFFFFULL, 0x00000000UL, 0, 128, 0, blake256_regenhash, precalc_hash_blake256, queue_blake_kernel, gen_hash, NULL },
   { "vanilla",     ALGO_VANILLA,   "", 1, 1, 1, 0, 0, 0xFF, 0xFFFFULL, 0x000000ffUL, 0, 128, 0, blakecoin_regenhash, precalc_hash_blakecoin, queue_blake_kernel, gen_hash, NULL },
 
-  { "ethash",     ALGO_ETHASH,   "", 1, 1, 1, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x00000000UL, 0, 128, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, ethash_regenhash, NULL, queue_ethash_kernel, gen_hash, append_ethash_compiler_options },
+  { "ethash",     ALGO_ETHASH,   "", (1ULL << 32), (1ULL << 32), 1, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x00000000UL, 0, 128, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, ethash_regenhash, NULL, queue_ethash_kernel, gen_hash, append_ethash_compiler_options },
   // Terminator (do not remove)
   { NULL, ALGO_UNK, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL }
 };
