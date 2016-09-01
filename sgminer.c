@@ -7490,18 +7490,16 @@ static void hash_sole_work(struct thr_info *mythr)
     } else if (drv->working_diff > work->work_difficulty)
       drv->working_diff = work->work_difficulty;
 
-    if (work->pool->algorithm.type == ALGO_NEOSCRYPT) {
+    if (work->pool->algorithm.type == ALGO_NEOSCRYPT)
       set_target_neoscrypt(work->device_target, work->device_diff, work->thr_id);
-    } else { 
-      if (work->pool->algorithm.type == ALGO_ETHASH) {
-        double mult = (1 << 26);
-	work->device_diff = MIN(work->work_difficulty, mult); 
-        *(uint64_t*) (work->device_target + 24) = bits64 / work->device_diff;
-	work->device_diff /= mult;
-      }
-      else      
-        set_target(work->device_target, work->device_diff, work->pool->algorithm.diff_multiplier2, work->thr_id);
+    else if (work->pool->algorithm.type == ALGO_ETHASH) {
+      double mult = 60e6;
+      work->device_diff = MIN(work->work_difficulty, mult); 
+      *(uint64_t*) (work->device_target + 24) = bits64 / work->device_diff;
+      work->device_diff /= mult;
     }
+    else      
+      set_target(work->device_target, work->device_diff, work->pool->algorithm.diff_multiplier2, work->thr_id);
 
     do {
       cgtime(&tv_start);
