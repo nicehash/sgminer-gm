@@ -192,10 +192,12 @@ __kernel void search(
 	uint isolate
 	)
 {
-	uint const gid = get_global_id(0);
+	const uint gid = get_global_id(0);
+	const uint thread_id = get_local_id(0) % 4;
+	const uint hash_id = get_local_id(0) / 4;
 	
 	__local compute_hash_share sharebuf[WORKSIZE / 4];
-	__local compute_hash_share *share = sharebuf;
+	__local compute_hash_share * const share = sharebuf + hash_id;
 
 	// sha3_512(header .. nonce)
 	uint2 state[25] = { 0UL };
@@ -208,164 +210,53 @@ __kernel void search(
 	
 	KECCAK_PROCESS(state, 5, 8, isolate);
 	
-	uint const thread_id = get_local_id(0) & 3;
-	uint const hash_id = get_local_id(0) >> 2;
-	
-	share += hash_id;
-	
-	// share init with other threads
-	if (0 == thread_id)
-		share->ulong8s[0] = ((ulong8 *)state)[0];
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	// It's done like it was because of the duplication
-	// We can do the same - with uint8s.
-	uint8 mix = share->uint8s[thread_id & 1];
-	
-	uint init0 = share->uints[0];
-	barrier(CLK_LOCAL_MEM_FENCE);
+	uint init0;
+	uint8 mix;
 	
 	#pragma unroll 1
-	for (uint a = 0; a < (ACCESSES & isolate); a += 8)
+	for (uint tid = 0; tid < 4; tid++)
 	{
-		#pragma unroll
-		for (uint y = 0; y < 8; ++y)
-		{
-			if (thread_id == amd_bfe(a, 3U, 2U))
-				share->uints[0] = fnv(init0 ^ (a + y), ((uint *)&mix)[y]) % convert_uint(DAG_SIZE);
-			
-			barrier(CLK_LOCAL_MEM_FENCE);
-			
-			mix = fnv(mix, g_dag[share->uints[0]].uint8s[thread_id]);
-		}
-	}
+		// share init with other threads
+		if (tid == thread_id)
+			share->ulong8s[0] = ((ulong8 *)state)[0];
 	
-	share->uint2s[thread_id] = (uint2)(fnv_reduce(mix.lo), fnv_reduce(mix.hi));
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	if (0 == thread_id)
-		((ulong4 *)state)[2] = share->ulong4s[0];
-	
-	/////////////////
-	
-	// share init with other threads
-	if (1 == thread_id)
-		share->ulong8s[0] = ((ulong8 *)state)[0];
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	// It's done like it was because of the duplication
-	// We can do the same - with uint8s.
-	mix = share->uint8s[thread_id & 1];
-	
-	init0 = share->uints[0];
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	#pragma unroll 1
-	for (uint a = 0; a < (ACCESSES & isolate); a += 8)
-	{
-		#pragma unroll
-		for (uint y = 0; y < 8; ++y)
-		{
-			if (thread_id == amd_bfe(a, 3U, 2U))
-				share->uints[0] = fnv(init0 ^ (a + y), ((uint *)&mix)[y]) % convert_uint(DAG_SIZE);
-			
-			barrier(CLK_LOCAL_MEM_FENCE);
-			
-			mix = fnv(mix, g_dag[share->uints[0]].uint8s[thread_id]);
-		}
-	}
-	
-	share->uint2s[thread_id] = (uint2)(fnv_reduce(mix.lo), fnv_reduce(mix.hi));
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	if (1 == thread_id)
-		((ulong4 *)state)[2] = share->ulong4s[0];
-	
-	///////////////////////////
-	
-	// share init with other threads
-	if (2 == thread_id)
-		share->ulong8s[0] = ((ulong8 *)state)[0];
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	// It's done like it was because of the duplication
-	// We can do the same - with uint8s.
-	mix = share->uint8s[thread_id & 1];
-	
-	init0 = share->uints[0];
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	#pragma unroll 1
-	for (uint a = 0; a < (ACCESSES & isolate); a += 8)
-	{
-		#pragma unroll
-		for (uint y = 0; y < 8; ++y)
-		{
-			if (thread_id == amd_bfe(a, 3U, 2U))
-				share->uints[0] = fnv(init0 ^ (a + y), ((uint *)&mix)[y]) % convert_uint(DAG_SIZE);
-			
-			barrier(CLK_LOCAL_MEM_FENCE);
-			
-			mix = fnv(mix, g_dag[share->uints[0]].uint8s[thread_id]);
-		}
-	}
-	
-	share->uint2s[thread_id] = (uint2)(fnv_reduce(mix.lo), fnv_reduce(mix.hi));
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	if (2 == thread_id)
-		((ulong4 *)state)[2] = share->ulong4s[0];
-	
-	////////////////////////
-	
-	// share init with other threads
-	if (3 == thread_id)
-		share->ulong8s[0] = ((ulong8 *)state)[0];
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	// It's done like it was because of the duplication
-	// We can do the same - with uint8s.
-	mix = share->uint8s[thread_id & 1];
-	
-	init0 = share->uints[0];
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	#pragma unroll 1
-	for (uint a = 0; a < (ACCESSES & isolate); a += 8)
-	{
-		#pragma unroll
-		for (uint y = 0; y < 8; ++y)
-		{
-			if (thread_id == amd_bfe(a, 3U, 2U))
-				share->uints[0] = fnv(init0 ^ (a + y), ((uint *)&mix)[y]) % convert_uint(DAG_SIZE);
-			
-			barrier(CLK_LOCAL_MEM_FENCE);
+		barrier(CLK_LOCAL_MEM_FENCE);
 		
-			mix = fnv(mix, g_dag[share->uints[0]].uint8s[thread_id]);
+		// It's done like it was because of the duplication
+		// We can do the same - with uint8s.
+		mix = share->uint8s[thread_id & 1];
+	
+		init0 = share->uints[0];
+		barrier(CLK_LOCAL_MEM_FENCE);
+		
+		#pragma unroll 1
+		for (uint a = 0; a < (ACCESSES & isolate); a += 8)
+		{
+			#pragma unroll
+			for (uint y = 0; y < 8; ++y)
+			{
+				if (thread_id == amd_bfe(a, 3U, 2U))
+					share->uints[0] = fnv(init0 ^ (a + y), ((uint *)&mix)[y]) % DAG_SIZE;
+			
+				barrier(CLK_LOCAL_MEM_FENCE);
+				
+				mix = fnv(mix, g_dag[share->uints[0]].uint8s[thread_id]);
+			}
 		}
+		
+		share->uint2s[thread_id] = (uint2)(fnv_reduce(mix.lo), fnv_reduce(mix.hi));
+		
+		barrier(CLK_LOCAL_MEM_FENCE);
+		
+		if (tid == thread_id)
+			((ulong4 *)state)[2] = share->ulong4s[0];
 	}
-	
-	share->uint2s[thread_id] = (uint2)(fnv_reduce(mix.lo), fnv_reduce(mix.hi));
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	if (3 == thread_id)
-		((ulong4 *)state)[2] = share->ulong4s[0];
 	
 	#pragma unroll
 	for (uint i = 13; i < 25; ++i)
 		state[i] = (uint2)(0U, 0U);
 	state[12] = as_uint2(0x0000000000000001UL);
 	state[16] = as_uint2(0x8000000000000000UL);
-	
-	barrier(CLK_LOCAL_MEM_FENCE);
 	
 	KECCAK_PROCESS(state, 12, 1, isolate);
 	
@@ -404,8 +295,10 @@ static void SHA3_512(uint2 *s, uint isolate)
 		s[i] = st[i];
 }
 
-__kernel void GenerateDAG(uint start, __global const Node *Cache, __global Node *DAG, uint LIGHT_SIZE, uint isolate)
+__kernel void GenerateDAG(uint start, __global const uint16 *_Cache, __global uint16 *_DAG, uint LIGHT_SIZE, uint isolate)
 {
+    __global const Node *Cache = (__global const Node *) _Cache;
+    __global Node *DAG = (__global Node *) _DAG;
 	uint NodeIdx = start + get_global_id(0);
 	//if  (NodeIdx > DAG_SIZE) return;
 	
