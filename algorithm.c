@@ -971,7 +971,7 @@ static cl_int queue_ethash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_u
 	cl_ulong le_target;
 	cl_uint HighNonce, Isolate = 0xFFFFFFFFUL;
 	cl_ulong DAGSize = EthGetDAGSize(blk->work->EpochNumber);
-	cl_uint DAGItems = (cl_uint)(DAGSize / 64);
+	size_t DAGItems = (size_t) (DAGSize / 64);
 	
 	le_target = *(cl_ulong *)(blk->work->device_target + 24);
 	
@@ -1057,12 +1057,12 @@ static cl_int queue_ethash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_u
 	kernel = &clState->kernel;
 	
 	// Not nodes now (64 bytes), but DAG entries (128 bytes)
-	DAGItems >>= 1;
+	cl_uint ItemsArg = DAGItems >> 1;
 	
 	CL_SET_ARG(clState->outputBuffer);
 	CL_SET_ARG(clState->CLbuffer0);
 	CL_SET_ARG(clState->DAG);
-	CL_SET_ARG(DAGItems);
+	CL_SET_ARG(ItemsArg);
 	CL_SET_ARG(blk->work->Nonce);
 	CL_SET_ARG(le_target);
 	CL_SET_ARG(Isolate);
