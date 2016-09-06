@@ -4156,6 +4156,9 @@ static double share_diff(const struct work *work)
     uint8_t tmp[32];
     swab256(tmp, work->hash);
     ret = eth2pow256 / (le256todouble(tmp) + 1.);
+    uint64_t le_target = *(uint64_t*) (work->target + 24);
+    if (*(uint64_t*) (tmp + 24) > le_target)
+      return ret;
   }
   else {
     d64 = work->pool->algorithm.share_diff_multiplier * truediffone;
