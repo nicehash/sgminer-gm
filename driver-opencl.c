@@ -1423,10 +1423,13 @@ static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
     return -1;
   }
   
-  mutex_lock(&work->pool->XMRGlobalNonceLock);
-  work->blk.nonce = work->pool->XMRGlobalNonce;
-  work->pool->XMRGlobalNonce += gpu->max_hashes;
-  mutex_unlock(&work->pool->XMRGlobalNonceLock);
+  if(gpu->algorithm.type == ALGO_CRYPTONIGHT)
+  {
+	mutex_lock(&work->pool->XMRGlobalNonceLock);
+	work->blk.nonce = work->pool->XMRGlobalNonce;
+	work->pool->XMRGlobalNonce += gpu->max_hashes;
+	mutex_unlock(&work->pool->XMRGlobalNonceLock);
+  }
   
   if (clState->goffset)
     p_global_work_offset = (size_t *)&work->blk.nonce;
@@ -1596,6 +1599,8 @@ static void opencl_thread_shutdown(struct thr_info *thr)
 	clReleaseMemObject(clState->buffer3);
     if (clState->padbuffer8)
       clReleaseMemObject(clState->padbuffer8);
+    if(clState->States) clReleaseMemObject(clState->States);
+    if(clState->Scratchpads) clReleaseMemObject(clState->Scratchpads);
     clReleaseKernel(clState->kernel);
     for (i = 0; i < clState->n_extra_kernels; i++)
       clReleaseKernel(clState->extra_kernels[i]);
