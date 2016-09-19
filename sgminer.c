@@ -555,6 +555,8 @@ struct pool *add_pool(void)
 
   pools = (struct pool **)realloc(pools, sizeof(struct pool *) * (total_pools + 2));
   pools[total_pools++] = pool;
+  mutex_init(&pool->XMRGlobalNonceLock);
+
   mutex_init(&pool->pool_lock);
   if (unlikely(pthread_cond_init(&pool->cr_cond, NULL)))
     quit(1, "Failed to pthread_cond_init in add_pool");
@@ -2969,7 +2971,7 @@ share_result(json_t *val, json_t *res, json_t *err, const struct work *work,
 
   cgpu = get_thr_cgpu(work->thr_id);
 
-  if (json_is_true(res) || (work->gbt && json_is_null(res))) {
+  if (json_is_true(res) || (work->gbt && json_is_null(res)) || (pool->algorithm.type == ALGO_CRYPTONIGHT && json_is_null(err))) {
     mutex_lock(&stats_lock);
     cgpu->accepted++;
     total_accepted++;
@@ -5355,6 +5357,8 @@ static void stratum_share_result(json_t *val, json_t *res_val, json_t *err_val,
   share_result(val, res_val, err_val, work, hashshow, false, "");
 }
 
+extern bool parse_notify_cn(struct pool *pool, json_t *val);
+
 /* Parses stratum json responses and tries to find the id that the request
  * matched to and treat it accordingly. */
 static bool parse_stratum_response(struct pool *pool, char *s)
@@ -5375,7 +5379,7 @@ static bool parse_stratum_response(struct pool *pool, char *s)
   err_val = json_object_get(val, "error");
   id_val = json_object_get(val, "id");
 
-  if ((json_is_null(id_val) || !id_val) && pool->algorithm.type != ALGO_ETHASH) {
+  if ((json_is_null(id_val) || !id_val) && (pool->algorithm.type != ALGO_ETHASH && pool->algorithm.type != ALGO_CRYPTONIGHT)) {
     char *ss;
 
     if (err_val)
@@ -5383,7 +5387,7 @@ static bool parse_stratum_response(struct pool *pool, char *s)
     else
       ss = strdup("(unknown reason)");
 
-    applog(LOG_INFO, "JSON-RPC non method decode failed: %s", ss);
+    applog(LOG_INFO, "JSON-RPC response decode failed: %s", ss);
 
     free(ss);
 
@@ -5402,6 +5406,7 @@ static bool parse_stratum_response(struct pool *pool, char *s)
 
   if (!sshare) {
     double pool_diff;
+    bool success = false;
 
     /* Since the share is untracked, we can only guess at what the
      * work difficulty is based on the current pool diff. */
@@ -5409,7 +5414,47 @@ static bool parse_stratum_response(struct pool *pool, char *s)
     pool_diff = pool->swork.diff;
     cg_runlock(&pool->data_lock);
 
-    if (json_is_true(res_val)) {
+    //for cryptonight, the result contains the "status" object which should = "OK" on accept
+    if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
+      json_t *res_id, *res_job;
+      
+      //check if the result contains an id... if so then we need to process as first job, not share response
+      if ((res_id = json_object_get(res_val, "id"))) {
+        cg_wlock(&pool->data_lock);
+        strcpy(pool->XMRAuthID, json_string_value(res_id));
+        cg_wunlock(&pool->data_lock);
+        
+        //get the job object and send to parse notify
+        if ((res_job = json_object_get(res_val, "job"))) {
+          ret = parse_notify_cn(pool, res_job);
+        }
+        
+        goto out;
+      }
+      
+      if (json_is_null(err_val) && !strcmp(json_string_value(json_object_get(res_val, "status")), "OK")) {
+        success = true;
+      }
+      else {
+        char *ss;
+
+        if (err_val) {
+          ss = json_dumps(err_val, JSON_INDENT(3));
+        } 
+        else {
+          ss = strdup("(unknown reason)");
+        }
+        
+        applog(LOG_INFO, "JSON-RPC response decode failed: %s", ss);
+
+        free(ss);
+      }
+    }
+    else {
+      success = json_is_true(res_val);
+    }
+
+    if (success) {
       applog(LOG_NOTICE, "Accepted untracked stratum share from %s", get_pool_name(pool));
 
       /* We don't know what device this came from so we can't
@@ -5549,6 +5594,7 @@ static void wait_lpcurrent(struct pool *pool);
 static void pool_resus(struct pool *pool);
 static void gen_stratum_work(struct pool *pool, struct work *work);
 static void gen_stratum_work_eth(struct pool *pool, struct work *work);
+static void gen_stratum_work_cn(struct pool *pool, struct work *work);
 static void stratum_resumed(struct pool *pool)
 {
   if (!pool->stratum_notify)
@@ -5669,8 +5715,21 @@ static void *stratum_rthread(void *userdata)
       /* Generate a single work item to update the current
        * block database */
       pool->swork.clean = false;
-      if(pool->algorithm.type == ALGO_ETHASH) gen_stratum_work_eth(pool, work);
-      else gen_stratum_work(pool, work);
+      
+      switch(pool->algorithm.type)
+      {
+        case ALGO_ETHASH:
+          gen_stratum_work_eth(pool, work);
+          break;
+        
+        case ALGO_CRYPTONIGHT:
+          gen_stratum_work_cn(pool, work);
+          break;
+          
+        default:
+          gen_stratum_work(pool, work);
+      }
+      
       work->longpoll = true;
       /* Return value doesn't matter. We're just informing
        * that we may need to restart. */
@@ -5687,6 +5746,7 @@ out:
 /* Each pool has one stratum send thread for sending shares to avoid many
  * threads being created for submission since all sends need to be serialised
  * anyway. */
+extern void cryptonight(uint8_t *Output, uint8_t *Input);
 static void *stratum_sthread(void *userdata)
 {
   struct pool *pool = (struct pool *)userdata;
@@ -5743,6 +5803,31 @@ static void *stratum_sthread(void *userdata)
       free(ASCIIMixHash);
       free(ASCIIPoWHash);
     }
+    else if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
+      sshare = (struct stratum_share *)calloc(sizeof(struct stratum_share), 1);
+      submitted = false;
+      char *ASCIIResult;
+      uint8_t HashResult[32];
+
+      sshare->sshare_time = time(NULL);
+      /* This work item is freed in parse_stratum_response */
+      sshare->work = work;
+
+      applog(LOG_DEBUG, "stratum_sthread() algorithm = %s", pool->algorithm.name);
+		
+      char *ASCIINonce = bin2hex(&work->XMRNonce, 4);
+      
+      ASCIIResult = bin2hex(work->hash, 32);
+       
+      mutex_lock(&sshare_lock);
+      /* Give the stratum share a unique id */
+      sshare->id = swork_id++;
+      mutex_unlock(&sshare_lock);
+      snprintf(s, sizeof(s), "{\"method\": \"submit\", \"params\": {\"id\": \"%s\", \"job_id\": \"%s\", \"nonce\": \"%s\", \"result\": \"%s\"}, \"id\":%d}", pool->XMRAuthID, work->job_id, ASCIINonce, ASCIIResult, sshare->id);
+
+      free(ASCIINonce);
+      free(ASCIIResult);
+    }
     else {	
       if (unlikely(work->nonce2_len > 8)) {
         applog(LOG_ERR, "%s asking for inappropriately long nonce2 length %d", get_pool_name(pool), (int)work->nonce2_len);
@@ -5784,7 +5869,12 @@ static void *stratum_sthread(void *userdata)
         pool->rpc_user, work->job_id, nonce2hex, work->ntime, noncehex, sshare->id);
     }
 	
-    applog(LOG_INFO, "Submitting share %08lx to %s", (long unsigned int)htole32(hash32[6]), get_pool_name(pool));
+   if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
+      applog(LOG_INFO, "Submitting share to %s", get_pool_name(pool));
+    }
+    else {
+      applog(LOG_INFO, "Submitting share %08lx to %s", (long unsigned int)htole32(hash32[6]), get_pool_name(pool));
+    }
 
     /* Try resubmitting for up to 2 minutes if we fail to submit
      * once and the stratum pool nonce1 still matches suggesting
@@ -5836,6 +5926,7 @@ static void *stratum_sthread(void *userdata)
         applog(LOG_DEBUG, "No matching session id for resubmitting stratum share");
         break;
       }
+            
       /* Retry every 5 seconds */
       sleep(5);
     }
@@ -5864,6 +5955,8 @@ static void init_stratum_threads(struct pool *pool)
     quit(1, "Failed to create stratum sthread");
   if (unlikely(pthread_create(&pool->stratum_rthread, NULL, stratum_rthread, (void *)pool)))
     quit(1, "Failed to create stratum rthread");
+  
+  applog(LOG_DEBUG, "Stratum threads created.");
 }
 
 static void *longpoll_thread(void *userdata);
@@ -5907,9 +6000,19 @@ retry_stratum:
       bool ret = initiate_stratum(pool) && (!pool->extranonce_subscribe || subscribe_extranonce(pool)) && auth_stratum(pool);
 
       if (ret)
+      {
         init_stratum_threads(pool);
+        
+        if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
+            struct work *work = make_work();
+            gen_stratum_work_cn(pool, work);
+            stage_work(work);
+        }
+      }
       else
+      {
         pool_tclear(pool, &pool->stratum_init);
+      }
       return ret;
     }
     return pool->stratum_active;
@@ -6287,6 +6390,49 @@ static void gen_stratum_work_eth(struct pool *pool, struct work *work)
   work->drv_rolllimit = 0;
 
   cgtime(&work->tv_staged);
+}
+
+/* Generates stratum based work based on the most recent notify information
+ * from the pool. This will keep generating work while a pool is down so we use
+ * other means to detect when the pool has died in stratum_thread */
+
+static void gen_stratum_work_cn(struct pool *pool, struct work *work)
+{
+  if(pool->algorithm.type != ALGO_CRYPTONIGHT)
+    return;
+
+  applog(LOG_DEBUG, "[THR%d] gen_stratum_work_cn() - algorithm = %s", work->thr_id, pool->algorithm.name);
+  
+  cg_rlock(&pool->data_lock);	
+  work->job_id = strdup(pool->swork.job_id);
+  work->XMRTarget = pool->XMRTarget;
+  //strcpy(work->XMRID, pool->XMRID);
+  //work->XMRBlockBlob = strdup(pool->XMRBlockBlob);
+  memcpy(work->XMRBlob, pool->XMRBlob, 76);
+  memcpy(work->data, work->XMRBlob, 76);
+  memset(work->target, 0xFF, 32);
+  work->sdiff = (double)0xffffffff / pool->XMRTarget;
+  work->work_difficulty = work->sdiff;
+  work->network_diff = pool->diff1;
+  cg_runlock(&pool->data_lock);
+  
+  work->target[7] = work->XMRTarget;
+  
+  local_work++;
+  work->pool = pool;
+  work->stratum = true;
+  work->blk.nonce = 0;
+  work->id = total_work++;
+  work->longpoll = false;
+  work->getwork_mode = GETWORK_MODE_STRATUM;
+
+  work->work_block = work->data[0];
+  // Do not allow ntime rolling
+  work->drv_rolllimit = 0;
+
+  cgtime(&work->tv_staged);
+  
+  applog(LOG_DEBUG, "gen_stratum_work_cn() done.");
 }
 
 static void gen_stratum_work(struct pool *pool, struct work *work)
@@ -7321,6 +7467,7 @@ static void rebuild_nonce(struct work *work, uint32_t nonce)
   }
   else
   {
+	  if(work->pool->algorithm.type == ALGO_CRYPTONIGHT) nonce_pos = 39;
 	  uint32_t *work_nonce = (uint32_t *)(work->data + nonce_pos);
 
 	  *work_nonce = htole32(nonce);
@@ -7345,6 +7492,10 @@ bool test_nonce(struct work *work, uint32_t nonce)
   else if (work->pool->algorithm.type == ALGO_ETHASH) {
     uint64_t target = *(uint64_t*) (work->device_target + 24);
     return (bswap_64(*(uint64_t*) work->hash) <= target);
+  }
+  else if(work->pool->algorithm.type = ALGO_CRYPTONIGHT)
+  {
+	  return(((uint32_t *)work->hash)[7] <= work->XMRTarget);
   }
   else {
     diff1targ = work->pool->algorithm.diff1targ;
@@ -7392,6 +7543,9 @@ bool submit_tested_work(struct thr_info *thr, struct work *work)
 //      applog(LOG_INFO, "%s %d: Share above target", thr->cgpu->drv->name, thr->cgpu->device_id);
       return(false);
     }
+  }
+  else if(work->pool->algorithm.type == ALGO_CRYPTONIGHT)
+  {
   }
   else if (!fulltest(work->hash, work->target)) {
     applog(LOG_INFO, "%s %d: Share above target", thr->cgpu->drv->name,
@@ -9178,7 +9332,7 @@ int main(int argc, char *argv[])
 
     pool->sgminer_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
     pool->sgminer_pool_stats.getwork_wait_min.tv_sec = MIN_SEC_UNSET;
-
+	
     if (!pool->rpc_userpass) {
       if (!pool->rpc_user || !pool->rpc_pass)
         quit(1, "No login credentials supplied for %s", get_pool_name(pool));
@@ -9402,8 +9556,20 @@ retry:
           goto retry;
         }
       }
-      if(pool->algorithm.type == ALGO_ETHASH) gen_stratum_work_eth(pool, work);
-      else gen_stratum_work(pool, work);
+      
+      switch(pool->algorithm.type) {
+        case ALGO_ETHASH:
+          gen_stratum_work_eth(pool, work);
+          break;
+          
+        case ALGO_CRYPTONIGHT:
+          gen_stratum_work_cn(pool, work);
+          break;
+          
+        default:
+           gen_stratum_work(pool, work);
+      }
+      
       applog(LOG_DEBUG, "Generated stratum work");
       stage_work(work);
       continue;

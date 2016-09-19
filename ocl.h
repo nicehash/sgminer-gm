@@ -27,6 +27,9 @@ typedef struct __clState {
   cl_uint EpochNumber;
   cl_mem MidstateBuf;
   cl_mem padbuffer8;
+  cl_mem BranchBuffer[4];
+  cl_mem Scratchpads;
+  cl_mem States;
   cl_mem buffer1;
   cl_mem buffer2;
   cl_mem buffer3;
