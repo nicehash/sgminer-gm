@@ -252,7 +252,6 @@ __kernel void search(
 			((ulong4 *)state)[2] = share->ulong4s[0];
 	}
 	
-	#pragma unroll
 	for (uint i = 13; i < 25; ++i)
 		state[i] = (uint2)(0U, 0U);
 	state[12] = as_uint2(0x0000000000000001UL);
