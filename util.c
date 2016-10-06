@@ -1724,7 +1724,6 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
   ret &= parse_diff_ethash(Target, TgtStr);
   
   if (!ret || (NetDiffStr != NULL && !parse_diff_ethash(NetDiff, NetDiffStr))) {
-    ret = false;
     goto out;
   }
   
