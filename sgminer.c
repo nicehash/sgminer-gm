@@ -5671,8 +5671,10 @@ static void *stratum_rthread(void *userdata)
       /* Generate a single work item to update the current
        * block database */
       pool->swork.clean = false;
-      if(pool->algorithm.type == ALGO_ETHASH) gen_stratum_work_eth(pool, work);
-      else gen_stratum_work(pool, work);
+      if(pool->algorithm.type == ALGO_ETHASH)
+        gen_stratum_work_eth(pool, work);
+      else
+        gen_stratum_work(pool, work);
       work->longpoll = true;
       /* Return value doesn't matter. We're just informing
        * that we may need to restart. */
@@ -9404,8 +9406,10 @@ retry:
           goto retry;
         }
       }
-      if(pool->algorithm.type == ALGO_ETHASH) gen_stratum_work_eth(pool, work);
-      else gen_stratum_work(pool, work);
+      if(pool->algorithm.type == ALGO_ETHASH)
+        gen_stratum_work_eth(pool, work);
+      else
+        gen_stratum_work(pool, work);
       applog(LOG_DEBUG, "Generated stratum work");
       stage_work(work);
       continue;
