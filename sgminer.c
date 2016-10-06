@@ -2099,9 +2099,8 @@ static double get_work_blockdiff(const struct work *work)
     diff64 = bswap_64(((uint64_t)(be32toh(*((uint32_t *)(work->data + 72))) & 0xFFFFFF00)) << 8);
     numerator = (double)work->pool->algorithm.diff_numerator;
   }
-  if(work->pool->algorithm.type == ALGO_ETHASH)
-  {
-	  return(work->network_diff);
+  if(work->pool->algorithm.type == ALGO_ETHASH) {
+    return work->network_diff;
   }
   else {
     uint8_t pow = work->data[72];
@@ -2382,7 +2381,6 @@ static bool work_decode_eth(struct pool *pool, struct work *work, json_t *val, j
   uint8_t EthWork[32], SeedHash[32], Target[32];
   char *EthWorkStr, *SeedHashStr, *TgtStr, *BlockHeightStr, *NetDiffStr, FinalNetDiffStr[65];
   
-  cgtime(&pool->tv_lastwork);
   
   json_t *res_arr = json_object_get(val, "result");
   if (json_is_null(res_arr))
@@ -2444,19 +2442,23 @@ static bool work_decode_eth(struct pool *pool, struct work *work, json_t *val, j
 	}
 	else if(!hex2bin(FinalNetDiffStr, NetDiffStr + 2, 32UL)) return(false);
 	*/
-  
+ 
+  cg_wlock(&pool->data_lock); 
+  cgtime(&pool->tv_lastwork);
   if (memcmp(pool->SeedHash, SeedHash, 32)) {
     pool->EpochNumber = EthCalcEpochNumber(SeedHash);
     memcpy(pool->SeedHash, SeedHash, 32);
   }
+  work->EpochNumber = pool->EpochNumber;
+  memcpy(work->seedhash, pool->SeedHash, 32);
+  cg_wunlock(&pool->data_lock);
   
   memcpy(work->data, EthWork, 32);
-  memcpy(work->seedhash, pool->SeedHash, 32);
   swab256(work->target, Target);	
-  
+ 
+  work->network_diff = 0; 
   //work->network_diff = eth2pow256 / le256todouble(FinalNetDiffStr);
   //work->EpochNumber = strtoul(BlockHeightStr + 2, NULL, 16) / 30000UL;
-  work->EpochNumber = pool->EpochNumber;
   cgtime(&work->tv_staged);
   ret = true;
 
