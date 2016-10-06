@@ -1239,6 +1239,7 @@ static const char *lookup_algorithm_alias(const char *lookup_alias, uint8_t *nfa
   ALGO_ALIAS("lyra2v2", "lyra2rev2");
   ALGO_ALIAS("blakecoin", "blake256r8");
   ALGO_ALIAS("blake", "blake256r14");
+  ALGO_ALIAS("ethash_genoil", "ethash");
 
 #undef ALGO_ALIAS
 #undef ALGO_ALIAS_NF
