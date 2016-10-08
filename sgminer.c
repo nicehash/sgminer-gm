@@ -2427,8 +2427,6 @@ static bool work_decode_eth(struct pool *pool, struct work *work, json_t *val, j
 
 	}
 	
-	if(NetDiffStr[1] == 'x') work->network_diff = strtoull(NetDiffStr + 2, NULL);
-		
 	if(strlen(NetDiffStr) != 66)
 	{
 		char NewNetDiffStr[65];
@@ -2451,14 +2449,15 @@ static bool work_decode_eth(struct pool *pool, struct work *work, json_t *val, j
   }
   work->EpochNumber = pool->EpochNumber;
   memcpy(work->seedhash, pool->SeedHash, 32);
+  pool->diff1 = -1;
+  work->network_diff = pool->diff1; 
   cg_wunlock(&pool->data_lock);
   
+  //work->network_diff = eth2pow256 / le256todouble(FinalNetDiffStr);
+  //work->EpochNumber = strtoul(BlockHeightStr + 2, NULL, 16) / 30000UL;
   memcpy(work->data, EthWork, 32);
   swab256(work->target, Target);	
  
-  work->network_diff = 0; 
-  //work->network_diff = eth2pow256 / le256todouble(FinalNetDiffStr);
-  //work->EpochNumber = strtoul(BlockHeightStr + 2, NULL, 16) / 30000UL;
   cgtime(&work->tv_staged);
   ret = true;
 
