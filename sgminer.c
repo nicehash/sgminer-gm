@@ -2449,7 +2449,7 @@ static bool work_decode_eth(struct pool *pool, struct work *work, json_t *val, j
   }
   work->EpochNumber = pool->EpochNumber;
   memcpy(work->seedhash, pool->SeedHash, 32);
-  pool->diff1 = -1;
+  pool->diff1 = 0;
   work->network_diff = pool->diff1; 
   cg_wunlock(&pool->data_lock);
   

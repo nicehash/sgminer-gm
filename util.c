@@ -1744,7 +1744,7 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
   pool->swork.diff = eth2pow256 / le256todouble(pool->Target);
   suffix_string_double(pool->swork.diff, pool->diff, sizeof(pool->diff), 0);
   
-  pool->diff1 = -1;
+  pool->diff1 = 0;
   if (NetDiffStr != NULL) {
     uint8_t tmp[32];
     swab256(tmp, NetDiff);
