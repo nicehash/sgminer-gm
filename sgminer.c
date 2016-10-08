@@ -5357,8 +5357,6 @@ static void stratum_share_result(json_t *val, json_t *res_val, json_t *err_val,
   share_result(val, res_val, err_val, work, hashshow, false, "");
 }
 
-extern bool parse_notify_cn(struct pool *pool, json_t *val);
-
 /* Parses stratum json responses and tries to find the id that the request
  * matched to and treat it accordingly. */
 static bool parse_stratum_response(struct pool *pool, char *s)
@@ -7495,7 +7493,7 @@ bool test_nonce(struct work *work, uint32_t nonce)
   }
   else if(work->pool->algorithm.type = ALGO_CRYPTONIGHT)
   {
-	  return(((uint32_t *)work->hash)[7] <= work->XMRTarget);
+	  return (((uint32_t *)work->hash)[7] <= work->XMRTarget);
   }
   else {
     diff1targ = work->pool->algorithm.diff1targ;

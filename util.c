@@ -1724,7 +1724,6 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
   ret &= parse_diff_ethash(Target, TgtStr);
   
   if (!ret || (NetDiffStr != NULL && !parse_diff_ethash(NetDiff, NetDiffStr))) {
-    ret = false;
     goto out;
   }
   
@@ -1747,8 +1746,9 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
   
   pool->diff1 = 0;
   if (NetDiffStr != NULL) {
-    swab256(pool->NetDiff, NetDiff);
-    pool->diff1 = eth2pow256 / le256todouble(pool->NetDiff);
+    uint8_t tmp[32];
+    swab256(tmp, NetDiff);
+    pool->diff1 = eth2pow256 / le256todouble(tmp);
   }
   pool->getwork_requested++;
   
