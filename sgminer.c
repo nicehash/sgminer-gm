@@ -2446,19 +2446,22 @@ static bool work_decode_eth(struct pool *pool, struct work *work, json_t *val, j
 	}
 	else if(!hex2bin(FinalNetDiffStr, NetDiffStr + 2, 32UL)) return(false);
 	*/
-  
+ 
+  cg_wlock(&pool->data_lock); 
   if (memcmp(pool->SeedHash, SeedHash, 32)) {
     pool->EpochNumber = EthCalcEpochNumber(SeedHash);
     memcpy(pool->SeedHash, SeedHash, 32);
   }
+  pool->diff1 = 0;
+  work->network_diff = pool->diff1;
+  memcpy(work->seedhash, pool->SeedHash, 32);
+  work->EpochNumber = pool->EpochNumber;
+  cg_wunlock(&pool->data_lock);
   
   memcpy(work->data, EthWork, 32);
-  memcpy(work->seedhash, pool->SeedHash, 32);
   swab256(work->target, Target);	
   
   //work->network_diff = eth2pow256 / le256todouble(FinalNetDiffStr);
-  //work->EpochNumber = strtoul(BlockHeightStr + 2, NULL, 16) / 30000UL;
-  work->EpochNumber = pool->EpochNumber;
   cgtime(&work->tv_staged);
   ret = true;
 
