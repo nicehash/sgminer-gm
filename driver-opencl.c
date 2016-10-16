@@ -1500,8 +1500,10 @@ static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
 		{
 			if(BranchBufCount[i])
 			{
+				cl_ulong tmp = BranchBufCount[i];
+				
 				// Threads
-				status = clSetKernelArg(clState->extra_kernels[i + 2], 4, sizeof(cl_ulong), BranchBufCount + i);
+				status = clSetKernelArg(clState->extra_kernels[i + 2], 4, sizeof(cl_ulong), &tmp);
 				
 				if(status != CL_SUCCESS)
 				{
