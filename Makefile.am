@@ -21,7 +21,7 @@ sgminer_LDADD    = $(DLOPEN_FLAGS) @LIBCURL_LIBS@ @JANSSON_LIBS@ @PTHREAD_LIBS@ 
 sgminer_CPPFLAGS += -I$(top_builddir)/lib -I$(top_srcdir)/lib @OPENCL_FLAGS@ @LIBCURL_CFLAGS@
 
 if HAVE_WINDOWS
-sgminer_LDFLAGS += -all-static
+sgminer_LDFLAGS += -all-static -Wl,--stack,4194304
 endif
 
 sgminer_CPPFLAGS += $(ADL_CPPFLAGS)
