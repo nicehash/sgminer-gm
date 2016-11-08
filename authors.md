@@ -1,4 +1,4 @@
-SGMiner-GM is the collaborative result of so many talented people. Here, you can find a list of authors (current and past), as well as contributors.
+SGMiner-GM is the collaborative result of so many talented people. Here, you can find a list of authors (current and past).
 
 ## Current Developers
 ###### These are the people who are currently working on SGMiner-GM!
@@ -104,3 +104,5 @@ SGMiner-GM is the collaborative result of so many talented people. Here, you can
 + [Tom Rini](https://github.com/trini)
 + [Raulo](https://github.com/Raulo)
 + [Jeff Garzik](https://github.com/jgarzik)
++ [Alexey Karimov](https://github.com/akarimov)
++ [Andreas Oeldenberger](https://github.com/anoelden)
