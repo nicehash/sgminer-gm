@@ -2,9 +2,9 @@ This project is being *actively* developed by Wolf and OhGodAGirl on behalf of G
 
 ### November, 2016
 
-+ Integrate ZCash Miner with Stratum Support
-+ Polish and Optimize SilentArmy
-+ Add fan control and temperature monitoring,
++ Integrate Zcash miner with Stratum support
++ Polish and optimize SilentArmy kernel.
++ Add fan control and temperature monitoring.
 + Clean up, and combine, the ZCash, Ethereum and XMR branches.
 
 ### December, 2016
@@ -23,7 +23,7 @@ This project is being *actively* developed by Wolf and OhGodAGirl on behalf of G
 
 + Integrate optimized kernels for JH, Luffa, Shavite.
 + Performance increases for various miners.
-+ Integrate control and finetuning for voltage control and memory control for GPUs.
++ Integrate control and finetuning for memory clocks for GPUs.
 + Add CPU mining
 
 ### March, 2017
