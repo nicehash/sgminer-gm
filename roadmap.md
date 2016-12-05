@@ -1,4 +1,4 @@
-This project is being *actively* developed by Wolf and OhGodAGirl on behalf of Genesis Mining. Here's our projected timeline - this is not set in stone, and will be updated to keep the community updated.
+This project is being *actively* developed by Genesis Mining. Here's our projected timeline - this is not set in stone, and will be updated to keep the community updated.
 
 ### November, 2016
 
