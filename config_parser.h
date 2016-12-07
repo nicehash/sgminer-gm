@@ -56,14 +56,12 @@ extern char *set_default_intensity(const char *arg);
 extern char *set_default_xintensity(const char *arg);
 extern char *set_default_rawintensity(const char *arg);
 extern char *set_default_thread_concurrency(const char *arg);
-#ifdef HAVE_ADL
-  extern char *set_default_gpu_engine(const char *arg);
-  extern char *set_default_gpu_memclock(const char *arg);
-  extern char *set_default_gpu_threads(const char *arg);
-  extern char *set_default_gpu_fan(const char *arg);
-  extern char *set_default_gpu_powertune(const char *arg);
-  extern char *set_default_gpu_vddc(const char *arg);
-#endif
+extern char *set_default_gpu_threads(const char *arg);
+extern char *set_default_gpu_engine(const char *arg);
+extern char *set_default_gpu_memclock(const char *arg);
+extern char *set_default_gpu_fan(const char *arg);
+extern char *set_default_gpu_powertune(const char *arg);
+extern char *set_default_gpu_vddc(const char *arg);
 extern char *set_default_profile(char *arg);
 extern char *set_default_shaders(const char *arg);
 extern char *set_default_worksize(const char *arg);
@@ -77,14 +75,12 @@ extern char *set_profile_intensity(const char *arg);
 extern char *set_profile_xintensity(const char *arg);
 extern char *set_profile_rawintensity(const char *arg);
 extern char *set_profile_thread_concurrency(const char *arg);
-#ifdef HAVE_ADL
-  extern char *set_profile_gpu_engine(const char *arg);
-  extern char *set_profile_gpu_memclock(const char *arg);
-  extern char *set_profile_gpu_threads(const char *arg);
-  extern char *set_profile_gpu_fan(const char *arg);
-  extern char *set_profile_gpu_powertune(const char *arg);
-  extern char *set_profile_gpu_vddc(const char *arg);
-#endif
+extern char *set_profile_gpu_threads(const char *arg);
+extern char *set_profile_gpu_engine(const char *arg);
+extern char *set_profile_gpu_memclock(const char *arg);
+extern char *set_profile_gpu_fan(const char *arg);
+extern char *set_profile_gpu_powertune(const char *arg);
+extern char *set_profile_gpu_vddc(const char *arg);
 extern char *set_profile_nfactor(const char *arg);
 extern char *set_profile_shaders(const char *arg);
 extern char *set_profile_worksize(const char *arg);

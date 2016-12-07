@@ -1,12 +1,13 @@
 #ifndef ADL_H
 #define ADL_H
 
-#ifdef HAVE_ADL
 extern bool adl_active;
 extern bool opt_reorder;
 extern int opt_hysteresis;
 extern int opt_targettemp;
 extern int opt_overheattemp;
+
+#ifdef HAVE_ADL
 
 void init_adl(int nDevs);
 float adl_gpu_temp(int gpu);

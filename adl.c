@@ -8,9 +8,6 @@
  */
 
 #include "config.h"
-
-#if defined(HAVE_ADL) && (defined(__unix__) || defined (WIN32))
-
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -20,6 +17,11 @@
 #endif
 
 #include "miner.h"
+
+bool adl_active;
+
+#if defined(HAVE_ADL) && (defined(__unix__) || defined (WIN32))
+
 #include "ADL_SDK/adl_sdk.h"
 #include "compat.h"
 
@@ -37,12 +39,11 @@
 # define wlogprint(...)  applog(LOG_WARNING, __VA_ARGS__)
 #endif
 
-bool adl_active;
 extern bool opt_reorder;
-
 extern int opt_hysteresis;
 extern int opt_targettemp;
 extern int opt_overheattemp;
+
 static pthread_mutex_t adl_lock;
 
 struct gpu_adapters {

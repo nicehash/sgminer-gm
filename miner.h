@@ -311,20 +311,21 @@ extern struct strategies strategies[];
 
 struct cgpu_info;
 
-#ifdef HAVE_ADL
 struct gpu_adl {
-  ADLTemperature lpTemperature;
   int iAdapterIndex;
   int lpAdapterID;
   int iBusNumber;
   char strAdapterName[256];
 
+#ifdef HAVE_ADL
+  ADLTemperature lpTemperature;
   ADLPMActivity lpActivity;
   ADLODParameters lpOdParameters;
   ADLODPerformanceLevels *DefPerfLev;
   ADLFanSpeedInfo lpFanSpeedInfo;
   ADLFanSpeedValue lpFanSpeedValue;
   ADLFanSpeedValue DefFanSpeedValue;
+#endif
 
   bool def_fan_valid;
 
@@ -349,7 +350,6 @@ struct gpu_adl {
   bool has_fanspeed;
   struct gpu_adl *twin;
 };
-#endif
 
 /***********************************
  * Switcher stuff

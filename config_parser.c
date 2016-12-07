@@ -41,10 +41,7 @@
 
 #include "algorithm.h"
 #include "pool.h"
-
-#ifdef HAVE_ADL
 #include "adl.h"
-#endif
 
 #if defined(unix) || defined(__APPLE__)
   #include <errno.h>
