@@ -1359,6 +1359,31 @@ bool sock_full(struct pool *pool)
   return (socket_full(pool, 0));
 }
 
+bool sock_keepalived(struct pool *pool, const char *rpc2_id, int work_id)
+{
+  json_t *val = NULL, *res_val, *err_val;
+  char *s = NULL, *sret;
+  json_error_t err;
+  bool ret = false;
+
+  if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
+    s = malloc(300 + strlen(rpc2_id) + 10);
+    snprintf(s, 128, "{\"method\": \"keepalived\", \"params\": {\"id\": \"%s\"}, \"id\":%d}", rpc2_id, work_id);
+  } else {
+    return true;
+  }
+
+  if (stratum_send(pool, s, strlen(s))) {
+    ret = true;
+  }
+
+  if (s) {
+    free(s);
+  }
+
+  return ret;
+}
+
 static void clear_sockbuf(struct pool *pool)
 {
   strcpy(pool->sockbuf, "");
