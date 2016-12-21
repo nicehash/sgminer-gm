@@ -1364,6 +1364,7 @@ struct pool {
   bool lagging;
   bool probed;
   enum pool_state state;
+  bool keepalive;
   bool submit_old;
   bool remove_at_start;
   bool removed;

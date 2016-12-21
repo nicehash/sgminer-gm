@@ -1085,6 +1085,22 @@ static char *set_pool_state(char *arg)
   return NULL;
 }
 
+static char *set_pool_keepalive(char *arg)
+{
+  struct pool *pool = get_current_pool();
+
+  applog(LOG_INFO, "Setting pool %s keepalive to %s", get_pool_name(pool), arg);
+  if (strcmp(arg, "enabled") == 0) {
+    pool->keepalive = true;
+  } else if (strcmp(arg, "true") == 0) {
+    pool->keepalive = true;
+  } else {
+    pool->keepalive = false;
+  }
+
+  return NULL;
+}
+
 static char *set_switcher_mode(char *arg)
 {
   if(!strcasecmp(arg, "off"))
@@ -1788,6 +1804,9 @@ struct opt_table opt_config_table[] = {
   OPT_WITH_ARG("--state|--pool-state",
       set_pool_state, NULL, NULL,
       "Specify pool state at startup (default: enabled)"),
+  OPT_WITH_ARG("--keepalive|--pool-keepalive",
+      set_pool_keepalive, NULL, NULL,
+      "Specify pool if keepalived method is used (default: false)"),
   OPT_WITH_ARG("--switcher-mode",
       set_switcher_mode, NULL, NULL,
       "Algorithm/gpu settings switcher mode."),
@@ -5861,7 +5880,7 @@ static void *stratum_rthread(void *userdata)
     timeout.tv_usec = 0;
     
 
-    if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
+    if (pool->algorithm.type == ALGO_CRYPTONIGHT && pool->keepalive) {
       timeout_keep_alive.tv_sec = 60;
       timeout_keep_alive.tv_usec = 0;
 
