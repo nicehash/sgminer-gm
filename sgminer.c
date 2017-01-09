@@ -1085,6 +1085,22 @@ static char *set_pool_state(char *arg)
   return NULL;
 }
 
+static char *set_pool_keepalive(char *arg)
+{
+  struct pool *pool = get_current_pool();
+
+  applog(LOG_INFO, "Setting pool %s keepalive to %s", get_pool_name(pool), arg);
+  if (strcmp(arg, "enabled") == 0) {
+    pool->keepalive = true;
+  } else if (strcmp(arg, "true") == 0) {
+    pool->keepalive = true;
+  } else {
+    pool->keepalive = false;
+  }
+
+  return NULL;
+}
+
 static char *set_switcher_mode(char *arg)
 {
   if(!strcasecmp(arg, "off"))
@@ -1788,6 +1804,9 @@ struct opt_table opt_config_table[] = {
   OPT_WITH_ARG("--state|--pool-state",
       set_pool_state, NULL, NULL,
       "Specify pool state at startup (default: enabled)"),
+  OPT_WITH_ARG("--keepalive|--pool-keepalive",
+      set_pool_keepalive, NULL, NULL,
+      "Specify pool if keepalived method is used (default: false)"),
   OPT_WITH_ARG("--switcher-mode",
       set_switcher_mode, NULL, NULL,
       "Algorithm/gpu settings switcher mode."),
@@ -5572,6 +5591,18 @@ static bool parse_stratum_response(struct pool *pool, char *s)
     goto out;
   }
 
+  json_t *status = json_object_get(res_val, "status");
+
+  if (status && pool->algorithm.type == ALGO_CRYPTONIGHT) {
+    const char *s = json_string_value(status);
+
+    if (s && !strcmp(s, "KEEPALIVED")) {
+      applog(LOG_NOTICE, "Keepalived from %s received", get_pool_name(pool));
+      ret = true;
+      goto out;
+    }
+  }
+
   id = json_integer_value(id_val);
 
   mutex_lock(&sshare_lock);
@@ -5595,22 +5626,25 @@ static bool parse_stratum_response(struct pool *pool, char *s)
     //for cryptonight, the result contains the "status" object which should = "OK" on accept
     if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
       json_t *res_id, *res_job;
-      
+
       //check if the result contains an id... if so then we need to process as first job, not share response
       if ((res_id = json_object_get(res_val, "id"))) {
         cg_wlock(&pool->data_lock);
         strcpy(pool->XMRAuthID, json_string_value(res_id));
         cg_wunlock(&pool->data_lock);
-        
+
         //get the job object and send to parse notify
         if ((res_job = json_object_get(res_val, "job"))) {
           ret = parse_notify_cn(pool, res_job);
         }
-        
+
         goto out;
       }
-      
-      if (json_is_null(err_val) && !strcmp(json_string_value(json_object_get(res_val, "status")), "OK")) {
+
+      json_t *status = json_object_get(res_val, "status");
+      const char *s = json_string_value(status);
+
+      if (json_is_null(err_val) && status && !strcmp(s, "OK")) {
         success = true;
       }
       else {
@@ -5810,6 +5844,7 @@ static void *stratum_rthread(void *userdata)
 
   while (42) {
     struct timeval timeout;
+    struct timeval timeout_keep_alive;
     int sel_ret;
     fd_set rd;
     char *s;
@@ -5843,6 +5878,21 @@ static void *stratum_rthread(void *userdata)
     FD_SET(pool->sock, &rd);
     timeout.tv_sec = 90;
     timeout.tv_usec = 0;
+    
+
+    if (pool->algorithm.type == ALGO_CRYPTONIGHT && pool->keepalive) {
+      timeout_keep_alive.tv_sec = 60;
+      timeout_keep_alive.tv_usec = 0;
+
+      if (!sock_full(pool) && (sel_ret = select(pool->sock + 1, &rd, NULL, NULL, &timeout_keep_alive)) < 1) {
+        if (sock_keepalived(pool, pool->XMRAuthID, swork_id++)) {
+          applog(LOG_NOTICE, "Stratum %s keepalived sent, id: %d", get_pool_name(pool), swork_id - 1);
+        }
+
+        FD_ZERO(&rd);
+        FD_SET(pool->sock, &rd);
+      }
+    }
 
     /* The protocol specifies that notify messages should be sent
      * every minute so if we fail to receive any for 90 seconds we
@@ -5853,6 +5903,7 @@ static void *stratum_rthread(void *userdata)
       s = NULL;
     } else
       s = recv_line(pool);
+
     if (!s) {
       applog(LOG_NOTICE, "Stratum connection to %s interrupted", get_pool_name(pool));
       pool->getfail_occasions++;
