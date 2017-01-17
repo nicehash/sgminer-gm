@@ -7582,7 +7582,7 @@ bool test_nonce(struct work *work, uint32_t nonce)
     uint64_t target = *(uint64_t*) (work->device_target + 24);
     return (bswap_64(*(uint64_t*) work->hash) <= target);
   }
-  else if (work->pool->algorithm.type = ALGO_CRYPTONIGHT) {
+  else if (work->pool->algorithm.type == ALGO_CRYPTONIGHT) {
     return (((uint32_t *)work->hash)[7] <= work->XMRTarget);
   }
   else {
