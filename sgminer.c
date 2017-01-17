@@ -55,6 +55,7 @@ char *curly = ":D";
 #include "miner.h"
 #include "findnonce.h"
 #include "adl.h"
+#include "sysfs-gpu-controls.h"
 #include "driver-opencl.h"
 #include "bench_block.h"
 
@@ -5506,6 +5507,11 @@ static void hashmeter(int thr_id, struct timeval *diff,
   showlog = true;
   cgtime(&total_tv_end);
 
+  struct timeval runtime;
+  timersub(&total_tv_end, &launch_time, &runtime);
+  double runtime_secs = runtime.tv_sec + 1e-6 * runtime.tv_usec;
+  applog(LOG_DEBUG, "total hashes: %g, total runtime / s: %g", 1e6 * total_mhashes_done, runtime_secs);
+
   local_secs = (double)total_diff.tv_sec + ((double)total_diff.tv_usec / 1000000.0);
   decay_time(&total_rolling, local_mhashes_done / local_secs, local_secs);
   global_hashrate = ((unsigned long long)lround(total_rolling)) * 1000000;
@@ -7342,141 +7348,6 @@ static void get_work_prepare_thread(struct thr_info *mythr, struct work *work)
     //apply switcher options
     apply_switcher_options(pool_switch_options, work->pool);
 
-    //devices
-    /*if(opt_isset(pool_switch_options, SWITCHER_APPLY_DEVICE))
-    {
-      //reset devices flags
-      opt_devs_enabled = 0;
-      for (i = 0; i < MAX_DEVICES; i++)
-          devices_enabled[i] = false;
-
-      //assign pool devices if any
-      if(!empty_string((opt = get_pool_setting(work->pool->devices, ((!empty_string(default_profile.devices))?default_profile.devices:"all"))))) {
-        set_devices((char *)opt);
-      }
-    }
-
-    //lookup gap
-    if(opt_isset(pool_switch_options, SWITCHER_APPLY_LG))
-    {
-      if(!empty_string((opt = get_pool_setting(work->pool->lookup_gap, default_profile.lookup_gap))))
-        set_lookup_gap((char *)opt);
-    }
-
-    //raw intensity from pool
-    if(opt_isset(pool_switch_options, SWITCHER_APPLY_RAWINT))
-    {
-      applog(LOG_DEBUG, "Switching to rawintensity: pool = %s, default = %s", work->pool->rawintensity, default_profile.rawintensity);
-      opt = get_pool_setting(work->pool->rawintensity, default_profile.rawintensity);
-      applog(LOG_DEBUG, "rawintensity -> %s", opt);
-      set_rawintensity(opt);
-    }
-    //xintensity
-    else if(opt_isset(pool_switch_options, SWITCHER_APPLY_XINT))
-    {
-      applog(LOG_DEBUG, "Switching to xintensity: pool = %s, default = %s", work->pool->xintensity, default_profile.xintensity);
-      opt = get_pool_setting(work->pool->xintensity, default_profile.xintensity);
-      applog(LOG_DEBUG, "xintensity -> %s", opt);
-      set_xintensity(opt);
-    }
-    //intensity
-    else if(opt_isset(pool_switch_options, SWITCHER_APPLY_INT))
-    {
-      applog(LOG_DEBUG, "Switching to intensity: pool = %s, default = %s", work->pool->intensity, default_profile.intensity);
-      opt = get_pool_setting(work->pool->intensity, default_profile.intensity);
-      applog(LOG_DEBUG, "intensity -> %s", opt);
-      set_intensity(opt);
-    }
-    //default basic intensity
-    else if(opt_isset(pool_switch_options, SWITCHER_APPLY_INT8))
-    {
-      default_profile.intensity = strdup("8");
-      set_intensity(default_profile.intensity);
-    }
-
-    //shaders
-    if(opt_isset(pool_switch_options, SWITCHER_APPLY_SHADER))
-    {
-      if(!empty_string((opt = get_pool_setting(work->pool->shaders, default_profile.shaders))))
-        set_shaders((char *)opt);
-    }
-
-    //thread-concurrency
-    if(opt_isset(pool_switch_options, SWITCHER_APPLY_TC))
-    {
-      // neoscrypt - if not specified set TC to 0 so that TC will be calculated by intensity settings
-      if (work->pool->algorithm.type == ALGO_NEOSCRYPT) {
-        opt = ((empty_string(work->pool->thread_concurrency))?"0":get_pool_setting(work->pool->thread_concurrency, default_profile.thread_concurrency));
-      }
-      // otherwise use pool/profile setting or default to default profile setting
-      else {
-        opt = get_pool_setting(work->pool->thread_concurrency, default_profile.thread_concurrency);
-      }
-
-      if(!empty_string(opt)) {
-        set_thread_concurrency((char *)opt);
-      }
-    }
-
-    //worksize
-    if(opt_isset(pool_switch_options, SWITCHER_APPLY_WORKSIZE))
-    {
-      if(!empty_string((opt = get_pool_setting(work->pool->worksize, default_profile.worksize))))
-        set_worksize(opt);
-    }
-
-    #ifdef HAVE_ADL
-      //GPU clock
-      if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_ENGINE))
-      {
-        if(!empty_string((opt = get_pool_setting(work->pool->gpu_engine, default_profile.gpu_engine))))
-          set_gpu_engine((char *)opt);
-      }
-
-      //GPU memory clock
-      if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_MEMCLOCK))
-      {
-        if(!empty_string((opt = get_pool_setting(work->pool->gpu_memclock, default_profile.gpu_memclock))))
-          set_gpu_memclock((char *)opt);
-      }
-
-      //GPU fans
-      if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_FAN))
-      {
-        if(!empty_string((opt = get_pool_setting(work->pool->gpu_fan, default_profile.gpu_fan))))
-          set_gpu_fan((char *)opt);
-      }
-
-      //GPU powertune
-      if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_POWERTUNE))
-      {
-        if(!empty_string((opt = get_pool_setting(work->pool->gpu_powertune, default_profile.gpu_powertune))))
-          set_gpu_powertune((char *)opt);
-      }
-
-      //GPU vddc
-      if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_VDDC))
-      {
-        if(!empty_string((opt = get_pool_setting(work->pool->gpu_vddc, default_profile.gpu_vddc))))
-          set_gpu_vddc((char *)opt);
-      }
-
-      //apply gpu settings
-      for (i = 0; i < nDevs; i++)
-      {
-        if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_ENGINE))
-          set_engineclock(i, gpus[i].min_engine);
-        if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_MEMCLOCK))
-          set_memoryclock(i, gpus[i].gpu_memclock);
-        if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_FAN))
-          set_fanspeed(i, gpus[i].min_fan);
-        if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_POWERTUNE))
-          set_powertune(i, gpus[i].gpu_powertune);
-        if(opt_isset(pool_switch_options, SWITCHER_APPLY_GPU_VDDC))
-          set_vddc(i, gpus[i].gpu_vddc);
-      }
-    #endif
-  */
     // Change algorithm for each thread (thread_prepare calls initCl)
     if(opt_isset(pool_switch_options, SWITCHER_SOFT_RESET))
       applog(LOG_DEBUG, "Soft Reset... Restarting threads...");
@@ -8510,9 +8381,8 @@ static void *watchdog_thread(void __maybe_unused *userdata)
       denable = &cgpu->deven;
       snprintf(dev_str, sizeof(dev_str), "%s%d", cgpu->drv->name, gpu);
 
-      if (adl_active && cgpu->has_adl || cgpu->has_sysfs_hwcontrols)
-        gpu_autotune(gpu, denable);
-      if (opt_debug && cgpu->has_adl) {
+      gpu_autotune(gpu, denable);
+      if (opt_debug) {
         int engineclock = 0, memclock = 0, activity = 0, fanspeed = 0, fanpercent = 0, powertune = 0;
         float temp = 0, vddc = 0;
 
@@ -8539,13 +8409,10 @@ static void *watchdog_thread(void __maybe_unused *userdata)
         dev_error(cgpu, REASON_DEV_SICK_IDLE_60);
         event_notify("gpu_sick");
 
-#ifdef HAVE_ADL
-        if (adl_active && cgpu->has_adl && gpu_activity(gpu) > 50) {
+        if (gpu_activity(gpu) > 50) {
           applog(LOG_ERR, "GPU still showing activity suggesting a hard hang.");
           applog(LOG_ERR, "Will not attempt to auto-restart it.");
-        } else
-#endif
-        if (opt_restart) {
+        } else if (opt_restart) {
           applog(LOG_ERR, "%s: Attempting to restart", dev_str);
           reinit_device(cgpu);
         }
@@ -8679,6 +8546,7 @@ static void clean_up(bool restarting)
 #ifdef HAVE_ADL
   clear_adl(nDevs);
 #endif
+  sysfs_cleanup(nDevs);
   cgtime(&total_tv_end);
 #ifdef WIN32
   timeEndPeriod(1);

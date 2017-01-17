@@ -136,6 +136,27 @@ int clDevicesNum(void) {
     for (j = 0; j < numDevices; j++) {
       clGetDeviceInfo(devices[j], CL_DEVICE_NAME, sizeof(pbuff), pbuff, NULL);
       applog(LOG_INFO, "\t%i\t%s", j, pbuff);
+
+#ifndef CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD
+#define CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD        1
+#define CL_DEVICE_TOPOLOGY_AMD                  0x4037
+
+      typedef union
+      {
+        struct { cl_uint type; cl_uint data[5]; } raw;
+        struct { cl_uint type; cl_char unused[17]; cl_char bus; cl_char device; cl_char function; } pcie;
+      } cl_device_topology_amd;
+#endif
+      cl_device_topology_amd topology;
+      status = clGetDeviceInfo (devices[j], CL_DEVICE_TOPOLOGY_AMD, sizeof(cl_device_topology_amd), &topology, NULL);
+      memset(gpus[j].sysfs_info.pcie_index, 0xff, sizeof(gpus[j].sysfs_info.pcie_index));
+      if (status == CL_SUCCESS && topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
+        uint8_t *pcie_index = gpus[j].sysfs_info.pcie_index;
+        pcie_index[0] = topology.pcie.bus;
+        pcie_index[1] = topology.pcie.device;
+        pcie_index[2] = topology.pcie.function;
+        applog(LOG_DEBUG, "GPU%d: detected PCIe topology 0000:%.2x:%.2x.%.1x", j, pcie_index[0], pcie_index[1], pcie_index[2]);
+      }
     }
     free(devices);
   }
@@ -254,7 +275,7 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
 
   applog(LOG_INFO, "List of devices:");
 
-  for (int i = 0; i < numDevices; ++i)	{
+  for (int i = 0; i < numDevices; ++i) {
     size_t tmpsize;
     if (clGetDeviceInfo(devices[i], CL_DEVICE_NAME, 0, NULL, &tmpsize) != CL_SUCCESS) {
       applog(LOG_ERR, "Error while getting the length of the name for GPU #%d.", i);
@@ -265,13 +286,13 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
     pbuff[i] = (char *)alloca(sizeof(char) * (tmpsize + 1));
     if (clGetDeviceInfo(devices[i], CL_DEVICE_NAME, sizeof(char) * tmpsize, pbuff[i], NULL) != CL_SUCCESS) {
       applog(LOG_ERR, "Error while attempting to get device information.");
-		  return NULL;
+      return NULL;
     }
 
     applog(LOG_INFO, "\t%i\t%s", i, pbuff[i]);
-	}
+  }
 
-	applog(LOG_INFO, "Selected %d: %s", gpu, pbuff[gpu]);
+  applog(LOG_INFO, "Selected %d: %s", gpu, pbuff[gpu]);
   strncpy(name, pbuff[gpu], nameSize);
 
   status = create_opencl_context(&clState->context, &platform);
@@ -309,8 +330,8 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
   // Source: http://www.amd.com/us/Documents/GCN_Architecture_whitepaper.pdf
   clState->compute_shaders = compute_units << 6;
   applog(LOG_INFO, "Maximum work size for this GPU (%d) is %d.", gpu, clState->max_work_size);
-	applog(LOG_INFO, "Your GPU (#%d) has %d compute units, and all AMD cards in the 7 series or newer (GCN cards) \
-		have 64 shaders per compute unit - this means it has %d shaders.", gpu, compute_units, clState->compute_shaders);
+  applog(LOG_INFO, "Your GPU (#%d) has %d compute units, and all AMD cards in the 7 series or newer (GCN cards) \
+    have 64 shaders per compute unit - this means it has %d shaders.", gpu, compute_units, clState->compute_shaders);
 
   status = clGetDeviceInfo(devices[gpu], CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), (void *)&cgpu->max_alloc, NULL);
   if (status != CL_SUCCESS) {
@@ -728,16 +749,16 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
 
   // Build information
   strcpy(build_data->source_filename, filename);
-	strcpy(build_data->platform, name);
-	strcpy(build_data->sgminer_path, sgminer_path);
+  strcpy(build_data->platform, name);
+  strcpy(build_data->sgminer_path, sgminer_path);
 
   build_data->kernel_path = (*opt_kernel_path) ? opt_kernel_path : NULL;
   build_data->work_size = clState->wsize;
   build_data->opencl_version = get_opencl_version(devices[gpu]);
 
   strcpy(build_data->binary_filename, filename);
-	build_data->binary_filename[strlen(filename) - 3] = 0x00;		// And one NULL terminator, cutting off the .cl suffix.
-	strcat(build_data->binary_filename, pbuff[gpu]);
+  build_data->binary_filename[strlen(filename) - 3] = 0x00;		// And one NULL terminator, cutting off the .cl suffix.
+  strcat(build_data->binary_filename, pbuff[gpu]);
 
   if (clState->goffset) {
     strcat(build_data->binary_filename, "g");
@@ -783,7 +804,7 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
     for (int i = 0; i < clState->n_extra_kernels; i++) {
       clState->extra_kernels[i] = clCreateKernel(clState->program, kernel_names[i], &status);
       if (status != CL_SUCCESS) {
-	applog(LOG_ERR, "Error %d: Creating Kernel \"%s\" from program. (clCreateKernel)", status, kernel_names[i]);
+        applog(LOG_ERR, "Error %d: Creating Kernel \"%s\" from program. (clCreateKernel)", status, kernel_names[i]);
         return NULL;
       }
     }
@@ -959,7 +980,7 @@ out:
      * 2 greater >= required amount earlier */
     if (bufsize > cgpu->max_alloc) {
       applog(LOG_WARNING, "Maximum buffer memory device %d supports says %lu",
-	gpu, (unsigned long)(cgpu->max_alloc));
+        gpu, (unsigned long)(cgpu->max_alloc));
       applog(LOG_WARNING, "Your settings come to %lu", (unsigned long)bufsize);
     }
 
@@ -967,35 +988,35 @@ out:
       // need additionnal buffers
       clState->buffer1 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf1size, NULL, &status);
       if (status != CL_SUCCESS && !clState->buffer1) {
-	applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer1), decrease TC or increase LG", status);
-	return NULL;
+        applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer1), decrease TC or increase LG", status);
+        return NULL;
       }
 
       clState->buffer2 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf2size, NULL, &status);
       if (status != CL_SUCCESS && !clState->buffer2) {
-	applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer2), decrease TC or increase LG", status);
-	return NULL;
+        applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer2), decrease TC or increase LG", status);
+        return NULL;
       }
 
       clState->buffer3 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf3size, NULL, &status);
       if (status != CL_SUCCESS && !clState->buffer3) {
-	applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer3), decrease TC or increase LG", status);
-	return NULL;
+        applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer3), decrease TC or increase LG", status);
+        return NULL;
       }
     }
     else if (algorithm->type == ALGO_LYRA2REV2) {
       // need additionnal buffers
       clState->buffer1 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf1size, NULL, &status);
       if (status != CL_SUCCESS && !clState->buffer1) {
-	applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer1), decrease TC or increase LG", status);
-	return NULL;
+        applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer1), decrease TC or increase LG", status);
+        return NULL;
       }
     }
     else {
       clState->buffer1 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, bufsize, NULL, &status); // we don't need that much just tired...
       if (status != CL_SUCCESS && !clState->buffer1) {
-	applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer1), decrease TC or increase LG", status);
-	return NULL;
+        applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer1), decrease TC or increase LG", status);
+        return NULL;
       }
     }
 
@@ -1012,27 +1033,27 @@ out:
   if (algorithm->type == ALGO_CRYPTONIGHT) {
     size_t GlobalThreads;
     readbufsize = 76UL;
-		
+
     set_threads_hashes(1, clState->compute_shaders, &GlobalThreads, 1, &cgpu->intensity, &cgpu->xintensity, &cgpu->rawintensity, &cgpu->algorithm);
-		
+
     for (int i = 0; i < 4; ++i) {
       clState->BranchBuffer[i] = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, sizeof(cl_uint) * (GlobalThreads + 2), NULL, &status);
-			
+
       if (status != CL_SUCCESS) {
         applog(LOG_ERR, "Error %d when creating branch buffer %d.\n", status, i);
         return NULL;
       }
     }
-		
+
     clState->States = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, 200 * GlobalThreads, NULL, &status);
-		
+
     if(status != CL_SUCCESS) {
       applog(LOG_ERR, "Error %d when creating Cryptonight state buffer.\n", status);
       return NULL;
     }
-		
+
     clState->Scratchpads = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, (1 << 21) * GlobalThreads, NULL, &status);
-		
+
     if(status != CL_SUCCESS) {
       applog(LOG_ERR, "Error %d when creating Cryptonight scratchpads buffer.\n", status);
       return NULL;

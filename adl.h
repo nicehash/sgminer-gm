@@ -10,18 +10,7 @@ extern int opt_overheattemp;
 #ifdef HAVE_ADL
 
 void init_adl(int nDevs);
-float adl_gpu_temp(int gpu);
-int adl_gpu_engineclock(int gpu);
-int adl_gpu_memclock(int gpu);
-float adl_gpu_vddc(int gpu);
-int adl_gpu_activity(int gpu);
-int adl_gpu_fanspeed(int gpu);
-float adl_gpu_fanpercent(int gpu);
-int adl_set_powertune(int gpu, int iPercentage);
-bool adl_gpu_stats(int gpu, float *temp, int *engineclock, int *memclock, float *vddc,
-               int *activity, int *fanspeed, int *fanpercent, int *powertune);
 void change_gpusettings(int gpu);
-void adl_gpu_autotune(int gpu, enum dev_enable *denable);
 void clear_adl(int nDevs);
 
 #else /* HAVE_ADL */

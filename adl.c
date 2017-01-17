@@ -18,7 +18,7 @@
 
 #include "miner.h"
 
-bool adl_active;
+bool adl_active = false;
 
 #if defined(HAVE_ADL) && (defined(__unix__) || defined (WIN32))
 
@@ -123,8 +123,6 @@ static  ADL_OVERDRIVE6_POWERCONTROL_SET   ADL_Overdrive6_PowerControl_Set;
 static int iNumberAdapters;
 static LPAdapterInfo lpInfo = NULL;
 
-int adl_set_fanspeed(int gpu, float iFanSpeed);
-static float __gpu_temp(struct gpu_adl *ga);
 
 char *adl_error_desc(int error)
 {
@@ -1457,20 +1455,20 @@ void init_adl(int nDevs)
     }
   }
   
-	gpu_temp = &adl_gpu_temp;
-	gpu_engineclock = &adl_gpu_engineclock;
-	gpu_memclock = &adl_gpu_memclock;
-	gpu_vddc = &adl_gpu_vddc;
-	gpu_activity = &adl_gpu_activity;
-	gpu_fanspeed = &adl_gpu_fanspeed;
-	gpu_fanpercent = &adl_gpu_fanpercent;
-	gpu_autotune = &adl_gpu_autotune;
-	set_powertune = &adl_set_powertune;
-	set_vddc = &adl_set_vddc;
-	set_engineclock = &adl_set_engineclock;
-	set_memoryclock = &adl_set_memoryclock;
-	set_fanspeed = &adl_set_fanspeed;
-	gpu_stats = &adl_gpu_stats;
+  gpu_temp = &adl_gpu_temp;
+  gpu_engineclock = &adl_gpu_engineclock;
+  gpu_memclock = &adl_gpu_memclock;
+  gpu_vddc = &adl_gpu_vddc;
+  gpu_activity = &adl_gpu_activity;
+  gpu_fanspeed = &adl_gpu_fanspeed;
+  gpu_fanpercent = &adl_gpu_fanpercent;
+  gpu_autotune = &adl_gpu_autotune;
+  set_powertune = &adl_set_powertune;
+  set_vddc = &adl_set_vddc;
+  set_engineclock = &adl_set_engineclock;
+  set_memoryclock = &adl_set_memoryclock;
+  set_fanspeed = &adl_set_fanspeed;
+  gpu_stats = &adl_gpu_stats;
 }
 
 void change_gpusettings(int gpu)

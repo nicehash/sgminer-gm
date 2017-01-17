@@ -1516,29 +1516,30 @@ static json_t *build_profile_settings_json(json_t *object, struct profile *profi
   if (!build_profile_json_add(object, "worksize", profile->worksize, default_profile.worksize, isdefault, parentkey, profile->profile_no))
     return NULL;
 
+  // gpu_engine
+  if (!build_profile_json_add(object, "gpu-engine", profile->gpu_engine, default_profile.gpu_engine, isdefault, parentkey, profile->profile_no))
+    return NULL;
+
+  // gpu_memclock
+  if (!build_profile_json_add(object, "gpu-memclock", profile->gpu_memclock, default_profile.gpu_memclock, isdefault, parentkey, profile->profile_no))
+    return NULL;
+
+
+  // gpu_fan
+  if (!build_profile_json_add(object, "gpu-fan", profile->gpu_fan, default_profile.gpu_fan, isdefault, parentkey, profile->profile_no))
+    return NULL;
+
+  // gpu-powertune
+  if (!build_profile_json_add(object, "gpu-powertune", profile->gpu_powertune, default_profile.gpu_powertune, isdefault, parentkey, profile->profile_no))
+    return NULL;
+
+  // gpu-vddc
+  if (!build_profile_json_add(object, "gpu-vddc", profile->gpu_vddc, default_profile.gpu_vddc, isdefault, parentkey, profile->profile_no))
+    return NULL;
+
   #ifdef HAVE_ADL
-    // gpu_engine
-    if (!build_profile_json_add(object, "gpu-engine", profile->gpu_engine, default_profile.gpu_engine, isdefault, parentkey, profile->profile_no))
-      return NULL;
-
-    // gpu_memclock
-    if (!build_profile_json_add(object, "gpu-memclock", profile->gpu_memclock, default_profile.gpu_memclock, isdefault, parentkey, profile->profile_no))
-      return NULL;
-
     // gpu_threads
     if (!build_profile_json_add(object, "gpu-threads", profile->gpu_threads, default_profile.gpu_threads, isdefault, parentkey, profile->profile_no))
-      return NULL;
-
-    // gpu_fan
-    if (!build_profile_json_add(object, "gpu-fan", profile->gpu_fan, default_profile.gpu_fan, isdefault, parentkey, profile->profile_no))
-      return NULL;
-
-    // gpu-powertune
-    if (!build_profile_json_add(object, "gpu-powertune", profile->gpu_powertune, default_profile.gpu_powertune, isdefault, parentkey, profile->profile_no))
-      return NULL;
-
-    // gpu-vddc
-    if (!build_profile_json_add(object, "gpu-vddc", profile->gpu_vddc, default_profile.gpu_vddc, isdefault, parentkey, profile->profile_no))
       return NULL;
   #endif
 

@@ -1,14 +1,9 @@
 #ifndef __SYSFS_GPU_CONTROLS_H
 #define __SYSFS_GPU_CONTROLS_H
 
-#include "miner.h"
-
 extern bool has_sysfs_hwcontrols;
-extern bool opt_reorder;
-extern int opt_hysteresis;
-extern int opt_targettemp;
-extern int opt_overheattemp;
 
+void sysfs_cleanup(int);
 bool init_sysfs_hwcontrols(int nDevs);
 float sysfs_gpu_temp(int gpu);
 int sysfs_gpu_engineclock(int gpu);
