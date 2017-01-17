@@ -5510,7 +5510,7 @@ static void hashmeter(int thr_id, struct timeval *diff,
   struct timeval runtime;
   timersub(&total_tv_end, &launch_time, &runtime);
   double runtime_secs = runtime.tv_sec + 1e-6 * runtime.tv_usec;
-  applog(LOG_DEBUG, "total hashes: %g, total runtime / s: %g", 1e6 * total_mhashes_done, runtime_secs);
+  applog(LOG_DEBUG, "total hashes: %.0f, total runtime / s: %.3f", 1e6 * total_mhashes_done, runtime_secs);
 
   local_secs = (double)total_diff.tv_sec + ((double)total_diff.tv_usec / 1000000.0);
   decay_time(&total_rolling, local_mhashes_done / local_secs, local_secs);
