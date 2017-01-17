@@ -44,7 +44,7 @@ sgminer_SOURCES += driver-opencl.c driver-opencl.h
 sgminer_SOURCES += ocl.c ocl.h
 sgminer_SOURCES += findnonce.c findnonce.h
 sgminer_SOURCES += adl.c adl.h adl_functions.h
-sgminer_SOURCES += sysfs-gpu-controls.c sysfs-gpu-controls.h
+sgminer_SOURCES += sysfs-gpu-controls.c sysfs-gpu-controls.h pptable_v1_0.h
 sgminer_SOURCES += pool.c pool.h
 sgminer_SOURCES += algorithm.c algorithm.h
 sgminer_SOURCES += config_parser.c config_parser.h
@@ -53,6 +53,7 @@ sgminer_SOURCES += ocl/build_kernel.c ocl/build_kernel.h
 sgminer_SOURCES += ocl/binary_kernel.c ocl/binary_kernel.h
 
 sgminer_SOURCES += kernel/*.cl
+sgminer_SOURCES += kernel/*.h
 sgminer_SOURCES += algorithm/scrypt.c algorithm/scrypt.h
 sgminer_SOURCES += algorithm/darkcoin.c algorithm/darkcoin.h
 sgminer_SOURCES += algorithm/qubitcoin.c algorithm/qubitcoin.h
