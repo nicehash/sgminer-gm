@@ -362,8 +362,8 @@ __kernel void search(__global ulong *input, __global uint4 *Scratchpad, __global
 	
 	((uint *)State)[9] &= 0x00FFFFFFU;
 	((uint *)State)[9] |= ((get_global_id(0)) & 0xFF) << 24;
-	((uint *)State)[10] &= 0xFF000000U;
-	((uint *)State)[10] |= ((get_global_id(0) >> 8));
+	((uint *)State)[10] &= 0xFFFF0000U;
+	((uint *)State)[10] |= ((get_global_id(0)) & 0xFFFFFF) >> 8;
 	State[9] = (input[9] & 0x00000000FFFFFFFFUL) | 0x0000000100000000UL;
 	
 	for(int i = 10; i < 25; ++i) State[i] = 0x00UL;
