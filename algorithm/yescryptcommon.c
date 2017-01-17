@@ -320,6 +320,10 @@ yescrypt_gensalt(uint32_t N_log2, uint32_t r, uint32_t p,
 	    buf, sizeof(buf));
 }
 
+#ifdef _MSC_VER
+#define __thread __declspec(thread)
+#endif
+
 static int
 yescrypt_bsty(const uint8_t * passwd, size_t passwdlen,
     const uint8_t * salt, size_t saltlen, uint64_t N, uint32_t r, uint32_t p,

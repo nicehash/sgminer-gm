@@ -1646,6 +1646,16 @@ static void opencl_thread_shutdown(struct thr_info *thr)
       clReleaseMemObject(clState->buffer3);
     if (clState->padbuffer8)
       clReleaseMemObject(clState->padbuffer8);
+    for (i = 0; i < 9; i++)
+      if (clState->index_buf[i])
+        clReleaseMemObject(clState->index_buf[i]);
+    for (i = 0; i < 4; i++)
+      if (clState->BranchBuffer[i])
+        clReleaseMemObject(clState->BranchBuffer[i]);
+    if (clState->Scratchpads)
+      clReleaseMemObject(clState->Scratchpads);
+    if (clState->States)
+      clReleaseMemObject(clState->States);
     clReleaseKernel(clState->kernel);
     for (i = 0; i < clState->n_extra_kernels; i++)
       clReleaseKernel(clState->extra_kernels[i]);
