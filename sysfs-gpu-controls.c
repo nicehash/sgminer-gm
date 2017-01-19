@@ -47,6 +47,19 @@ static void sysfs_init(gpu_sysfs_info *info, int gpu_idx)
     info->pcie_index[0], info->pcie_index[1], info->pcie_index[2]);
   size_t len = strlen(path);
 
+  snprintf(path + len, sizeof(path) - len, "hwmon");
+  DIR *hwmon = opendir(path); 
+  if (hwmon == NULL) {
+    applog(LOG_DEBUG, "Failed to open hwmon directory %s for GPU%d", path, gpu_idx);
+    snprintf(path, sizeof(path), "/sys/class/drm/card%d/device/hwmon", gpu_idx);
+    len = strlen(path) - 5;
+    hwmon = opendir(path);
+    if (hwmon == NULL) {
+      applog(LOG_DEBUG, "Failed to open hwmon directory %s for GPU%d", path, gpu_idx);
+      return;
+    }
+  }
+  
   snprintf(path + len, sizeof(path) - len, "pp_table");
   int fd = open(path, O_RDONLY | O_RSYNC);
   bool success = false;
@@ -84,14 +97,6 @@ static void sysfs_init(gpu_sysfs_info *info, int gpu_idx)
     applog(LOG_DEBUG, "Failed to open %s", path);
  
 
-  snprintf(path + len, sizeof(path) - len, "hwmon");
-  len += 5;
-  DIR *hwmon = opendir(path); 
-  if (hwmon == NULL) {
-    applog(LOG_DEBUG, "Failed to open hwmon directory for GPU%d", gpu_idx);
-    return;
-  }
-  
   while (true) {
     inner_hwmon = readdir(hwmon);
     if (inner_hwmon == NULL) {
@@ -105,7 +110,7 @@ static void sysfs_init(gpu_sysfs_info *info, int gpu_idx)
       break;
   }
   
-  snprintf(path + len, sizeof(path) - len, "/%s/", inner_hwmon->d_name);
+  snprintf(path + len, sizeof(path) - len, "hwmon/%s/", inner_hwmon->d_name);
   len = strlen(path);
   closedir(hwmon);
 
