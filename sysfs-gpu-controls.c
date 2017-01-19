@@ -25,7 +25,7 @@ int sysfs_set_vddc(int gpu, float fVddc) { return 1; }
 static void sysfs_init(gpu_sysfs_info *info, int gpu_idx)
 {
   memset(info, 0, sizeof(gpu_sysfs_info));
-  info->fd_fan = info->fd_temp = info->fd_pptable = -1;
+  info->fd_pptable = info->fd_fan = info->fd_temp = info->fd_pwm = info->fd_sclk = info->fd_mclk = -1;
 }
 
 #else
@@ -41,7 +41,7 @@ static void sysfs_init(gpu_sysfs_info *info, int gpu_idx)
   char path[256];
   struct dirent *inner_hwmon;
   
-  info->fd_pptable = info->fd_fan = info->fd_temp = info->fd_pwm = -1;
+  info->fd_pptable = info->fd_fan = info->fd_temp = info->fd_pwm = info->fd_sclk = info->fd_mclk = -1;
 
   snprintf(path, sizeof(path), "/sys/bus/pci/devices/0000:%.2x:%.2x.%.1x/", 
     info->pcie_index[0], info->pcie_index[1], info->pcie_index[2]);
@@ -289,7 +289,7 @@ static int __set_fanspeed(gpu_sysfs_info *info, float fanpercent)
   int ret = 1;
   snprintf(speed_str, sizeof(speed_str), "%d", speed);
 #ifdef __linux__
-  if (info->fd_fan != -1) {
+  if (info->fd_fan != -1 && fanpercent >= 0.f) {
     pthread_mutex_lock(&info->rw_lock);
     lseek(info->fd_fan, 0, SEEK_SET);
     ret = (write(info->fd_fan, speed_str, strlen(speed_str)) <= 0);
@@ -391,6 +391,8 @@ static bool __set_engineclock(struct cgpu_info *cgpu, int iEngineClock)
   gpu_sysfs_info *info = &cgpu->sysfs_info;
   int engineclock = info->engineclock;
 
+  if (iEngineClock <= 0)
+    return false;
   if (cgpu->min_engine > 0)
     iEngineClock = MAX(iEngineClock, cgpu->min_engine);
   if (cgpu->gpu_engine > 0)
@@ -476,6 +478,8 @@ static bool __change_engineclock(struct cgpu_info *cgpu, bool increase)
 
 static bool __set_memoryclock(struct cgpu_info *cgpu, int iMemoryClock)
 {
+  if (iMemoryClock <= 0)
+    return false;
   gpu_sysfs_info *info = &cgpu->sysfs_info;
   applog(LOG_DEBUG, "GPU%d: set memoryclock %dMHz", cgpu->device_id, iMemoryClock);
   int memclock = info->memclock;
