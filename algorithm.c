@@ -986,26 +986,26 @@ static cl_int queue_ethash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_u
     cg_ulock(&dag->lock);
     if (dag->dag_buffer == NULL || blk->work->eth_epoch > dag->max_epoch) {
       if (dag->dag_buffer != NULL) {
-	cg_dlock(&pool->data_lock);
+        cg_dlock(&pool->data_lock);
         clReleaseMemObject(dag->dag_buffer);
       }
       else {
-	cg_ulock(&pool->data_lock);
-	int size = ++pool->eth_cache.nDevs;
-	pool->eth_cache.dags = (eth_dag_t **) realloc(pool->eth_cache.dags, sizeof(void*) * size);
-	pool->eth_cache.dags[size-1] = dag;
-	dag->pool = pool;
-	cg_dwlock(&pool->data_lock);
+        cg_ulock(&pool->data_lock);
+        int size = ++pool->eth_cache.nDevs;
+        pool->eth_cache.dags = (eth_dag_t **) realloc(pool->eth_cache.dags, sizeof(void*) * size);
+        pool->eth_cache.dags[size-1] = dag;
+        dag->pool = pool;
+        cg_dwlock(&pool->data_lock);
       }
       dag->max_epoch = blk->work->eth_epoch + eth_future_epochs;
       dag->dag_buffer = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, EthGetDAGSize(dag->max_epoch), NULL, &status);
       if (status != CL_SUCCESS) {
-	cg_runlock(&pool->data_lock);
-	dag->max_epoch = 0;
-	dag->dag_buffer = NULL;
-	cg_wunlock(&dag->lock);
-	applog(LOG_ERR, "Error %d: Creating the DAG buffer failed.", status);
-	return status;
+        cg_runlock(&pool->data_lock);
+        dag->max_epoch = 0;
+        dag->dag_buffer = NULL;
+        cg_wunlock(&dag->lock);
+        applog(LOG_ERR, "Error %d: Creating the DAG buffer failed.", status);
+        return status;
       }
     }
     else
@@ -1067,7 +1067,7 @@ static cl_int queue_ethash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_u
 
   // DO NOT flip80.
   status |= clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 32, blk->work->data, 0, NULL, NULL);
-  
+
   CL_SET_ARG(clState->outputBuffer);
   CL_SET_ARG(clState->CLbuffer0);
   CL_SET_ARG(dag->dag_buffer);
@@ -1082,68 +1082,68 @@ static cl_int queue_ethash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_u
 }
 
 static void append_equihash_compiler_options(struct _build_kernel_data *data, struct cgpu_info *cgpu, struct _algorithm_t *algorithm)
-{  
+{
   strcat(data->compiler_options, "");
 }
 
 static cl_int queue_cryptonight_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_unused cl_uint threads)
 {
-	cl_kernel *kernel = &clState->kernel;
-	unsigned int num = 0;
-	cl_int status = 0, tgt32 = (blk->work->XMRTarget);
-	cl_ulong le_target = ((cl_ulong)(blk->work->XMRTarget));
+  cl_kernel *kernel = &clState->kernel;
+  unsigned int num = 0;
+  cl_int status = 0, tgt32 = (blk->work->XMRTarget);
+  cl_ulong le_target = ((cl_ulong)(blk->work->XMRTarget));
 
-	//le_target = *(cl_ulong *)(blk->work->device_target + 24);
-	memcpy(clState->cldata, blk->work->data, 76);
-		
-	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 76, clState->cldata , 0, NULL, NULL);
-	
-	CL_SET_ARG(clState->CLbuffer0);
-	CL_SET_ARG(clState->Scratchpads);
-	CL_SET_ARG(clState->States);
-	
-	num = 0;
-	kernel = clState->extra_kernels;
-	CL_SET_ARG(clState->Scratchpads);
-	CL_SET_ARG(clState->States);
-	
-	num = 0;
-	CL_NEXTKERNEL_SET_ARG(clState->Scratchpads);
-	CL_SET_ARG(clState->States);
-	CL_SET_ARG(clState->BranchBuffer[0]);
-	CL_SET_ARG(clState->BranchBuffer[1]);
-	CL_SET_ARG(clState->BranchBuffer[2]);
-	CL_SET_ARG(clState->BranchBuffer[3]);
-	
-	num = 0;
-	CL_NEXTKERNEL_SET_ARG(clState->States);
-	CL_SET_ARG(clState->BranchBuffer[0]);
-	CL_SET_ARG(clState->outputBuffer);
-	CL_SET_ARG(tgt32);
-	
-	// last to be set in driver-opencl.c
-	
-	num = 0;
-	CL_NEXTKERNEL_SET_ARG(clState->States);
-	CL_SET_ARG(clState->BranchBuffer[1]);
-	CL_SET_ARG(clState->outputBuffer);
-	CL_SET_ARG(tgt32);
-	
-	
-	num = 0;
-	CL_NEXTKERNEL_SET_ARG(clState->States);
-	CL_SET_ARG(clState->BranchBuffer[2]);
-	CL_SET_ARG(clState->outputBuffer);
-	CL_SET_ARG(tgt32);
-	
-	
-	num = 0;
-	CL_NEXTKERNEL_SET_ARG(clState->States);
-	CL_SET_ARG(clState->BranchBuffer[3]);
-	CL_SET_ARG(clState->outputBuffer);
-	CL_SET_ARG(tgt32);
-	
-	return(status);
+  //le_target = *(cl_ulong *)(blk->work->device_target + 24);
+  memcpy(clState->cldata, blk->work->data, 76);
+
+  status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 76, clState->cldata , 0, NULL, NULL);
+
+  CL_SET_ARG(clState->CLbuffer0);
+  CL_SET_ARG(clState->Scratchpads);
+  CL_SET_ARG(clState->States);
+
+  num = 0;
+  kernel = clState->extra_kernels;
+  CL_SET_ARG(clState->Scratchpads);
+  CL_SET_ARG(clState->States);
+
+  num = 0;
+  CL_NEXTKERNEL_SET_ARG(clState->Scratchpads);
+  CL_SET_ARG(clState->States);
+  CL_SET_ARG(clState->BranchBuffer[0]);
+  CL_SET_ARG(clState->BranchBuffer[1]);
+  CL_SET_ARG(clState->BranchBuffer[2]);
+  CL_SET_ARG(clState->BranchBuffer[3]);
+
+  num = 0;
+  CL_NEXTKERNEL_SET_ARG(clState->States);
+  CL_SET_ARG(clState->BranchBuffer[0]);
+  CL_SET_ARG(clState->outputBuffer);
+  CL_SET_ARG(tgt32);
+
+  // last to be set in driver-opencl.c
+
+  num = 0;
+  CL_NEXTKERNEL_SET_ARG(clState->States);
+  CL_SET_ARG(clState->BranchBuffer[1]);
+  CL_SET_ARG(clState->outputBuffer);
+  CL_SET_ARG(tgt32);
+
+
+  num = 0;
+  CL_NEXTKERNEL_SET_ARG(clState->States);
+  CL_SET_ARG(clState->BranchBuffer[2]);
+  CL_SET_ARG(clState->outputBuffer);
+  CL_SET_ARG(tgt32);
+
+
+  num = 0;
+  CL_NEXTKERNEL_SET_ARG(clState->States);
+  CL_SET_ARG(clState->BranchBuffer[3]);
+  CL_SET_ARG(clState->outputBuffer);
+  CL_SET_ARG(tgt32);
+
+  return(status);
 }
 
 
@@ -1160,7 +1160,7 @@ static cl_int queue_equihash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe
   status = clEnqueueWriteBuffer(clState->commandQueue, clState->MidstateBuf, CL_TRUE, 0, sizeof(mid_hash), mid_hash, 0, NULL, NULL);
   uint32_t dbg[2] = {0};
   status |= clEnqueueWriteBuffer(clState->commandQueue, clState->padbuffer8, CL_TRUE, 0, sizeof(dbg), &dbg, 0, NULL, NULL);
-  
+
   cl_mem rowCounters[2] = {clState->buffer2, clState->buffer3};
   for (int round = 0; round < PARAM_K; round++) {
     size_t global_ws = RC_SIZE;
@@ -1173,7 +1173,7 @@ static cl_int queue_equihash_kernel(_clState *clState, dev_blk_ctx *blk, __maybe
     CL_SET_ARG(clState->outputBuffer);
     CL_SET_ARG(clState->CLbuffer0);
     status |= clEnqueueNDRangeKernel(clState->commandQueue, *kernel, 1, NULL, &global_ws, &local_ws, 0, NULL, NULL);
-    
+
     kernel = &clState->extra_kernels[1 + round];
     if (!round) {
       worksize = LOCAL_WORK_SIZE_ROUND0;
@@ -1295,9 +1295,9 @@ static algorithm_settings_t algos[] = {
   { "ethash-genoil",     ALGO_ETHASH,   "", (1ULL << 32), (1ULL << 32), 1, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x00000000UL, 0, 128, 0, ethash_regenhash, NULL, queue_ethash_kernel, gen_hash, append_ethash_compiler_options },
 
   { "cryptonight", ALGO_CRYPTONIGHT, "", (1ULL << 32), (1ULL << 32), (1ULL << 32), 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 6, 0, 0, cryptonight_regenhash, NULL, queue_cryptonight_kernel, gen_hash, NULL },
-  
+
   { "equihash",     ALGO_EQUIHASH,   "", 1, (1ULL << 28), (1ULL << 28), 0, 0, 0x20000, 0xFFFF000000000000ULL, 0x00000000UL, 0, 128, 0, equihash_regenhash, NULL, queue_equihash_kernel, gen_hash, append_equihash_compiler_options },
-  
+
   // Terminator (do not remove)
   { NULL, ALGO_UNK, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL }
 };

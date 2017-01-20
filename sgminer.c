@@ -3325,17 +3325,17 @@ static bool submit_upstream_work(struct work *work, CURL *curl, char *curl_err_s
 
   if(work->pool->algorithm.type == ALGO_ETHASH)
   {
-	  s = (char *)malloc(sizeof(char) * (128 + 16 + 512));
-	  uint64_t tmp = bswap_64(work->Nonce);
-	  char *ASCIIMixHash = bin2hex(work->mixhash, 32);
-	  char *ASCIIPoWHash = bin2hex(work->data, 32);
-	  char *ASCIINonce = bin2hex(&tmp, 8);
+    s = (char *)malloc(sizeof(char) * (128 + 16 + 512));
+    uint64_t tmp = bswap_64(work->Nonce);
+    char *ASCIIMixHash = bin2hex(work->mixhash, 32);
+    char *ASCIIPoWHash = bin2hex(work->data, 32);
+    char *ASCIINonce = bin2hex(&tmp, 8);
 
-	  snprintf(s, 128 + 16 + 512, "{\"jsonrpc\":\"2.0\", \"method\":\"eth_submitWork\", \"params\":[\"0x%s\", \"0x%s\", \"0x%s\"],\"id\":1}", ASCIINonce, ASCIIPoWHash, ASCIIMixHash);
+    snprintf(s, 128 + 16 + 512, "{\"jsonrpc\":\"2.0\", \"method\":\"eth_submitWork\", \"params\":[\"0x%s\", \"0x%s\", \"0x%s\"],\"id\":1}", ASCIINonce, ASCIIPoWHash, ASCIIMixHash);
 
-	  free(ASCIINonce);
-	  free(ASCIIMixHash);
-	  free(ASCIIPoWHash);
+    free(ASCIINonce);
+    free(ASCIIMixHash);
+    free(ASCIIPoWHash);
   }
   else if(work->pool->algorithm.type == ALGO_EQUIHASH)
   {
@@ -3370,59 +3370,59 @@ static bool submit_upstream_work(struct work *work, CURL *curl, char *curl_err_s
   }
   else
   {
-	  if (work->pool->algorithm.type == ALGO_CRE) {
-		endian_flip168(work->data, work->data);
-	  } else {
-		endian_flip128(work->data, work->data);
-	  }
+    if (work->pool->algorithm.type == ALGO_CRE) {
+      endian_flip168(work->data, work->data);
+    } else {
+      endian_flip128(work->data, work->data);
+    }
 
-	  /* build hex string - Make sure to restrict to 80 bytes for Neoscrypt */
-	  int datasize = 128;
-	  if (work->pool->algorithm.type == ALGO_NEOSCRYPT) datasize = 80;
-	  else if (work->pool->algorithm.type == ALGO_CRE) datasize = 168;
-	  hexstr = bin2hex(work->data, datasize);
+    /* build hex string - Make sure to restrict to 80 bytes for Neoscrypt */
+    int datasize = 128;
+    if (work->pool->algorithm.type == ALGO_NEOSCRYPT) datasize = 80;
+    else if (work->pool->algorithm.type == ALGO_CRE) datasize = 168;
+    hexstr = bin2hex(work->data, datasize);
 
-	  /* build JSON-RPC request */
-	  if (work->gbt) {
-		char *gbt_block, *varint;
-		unsigned char data[80];
+    /* build JSON-RPC request */
+    if (work->gbt) {
+      char *gbt_block, *varint;
+      unsigned char data[80];
 
-		flip80(data, work->data);
-		gbt_block = bin2hex(data, 80);
+      flip80(data, work->data);
+      gbt_block = bin2hex(data, 80);
 
-		if (work->gbt_txns < 0xfd) {
-		  uint8_t val = work->gbt_txns;
+      if (work->gbt_txns < 0xfd) {
+        uint8_t val = work->gbt_txns;
 
-		  varint = bin2hex((const unsigned char *)&val, 1);
-		} else if (work->gbt_txns <= 0xffff) {
-		  uint16_t val = htole16(work->gbt_txns);
+        varint = bin2hex((const unsigned char *)&val, 1);
+      } else if (work->gbt_txns <= 0xffff) {
+        uint16_t val = htole16(work->gbt_txns);
 
-		  gbt_block = (char *)realloc_strcat(gbt_block, "fd");
-		  varint = bin2hex((const unsigned char *)&val, 2);
-		} else {
-		  uint32_t val = htole32(work->gbt_txns);
+        gbt_block = (char *)realloc_strcat(gbt_block, "fd");
+        varint = bin2hex((const unsigned char *)&val, 2);
+      } else {
+        uint32_t val = htole32(work->gbt_txns);
 
-		  gbt_block = (char *)realloc_strcat(gbt_block, "fe");
-		  varint = bin2hex((const unsigned char *)&val, 4);
-		}
-		gbt_block = (char *)realloc_strcat(gbt_block, varint);
-		free(varint);
-		gbt_block = (char *)realloc_strcat(gbt_block, work->coinbase);
+        gbt_block = (char *)realloc_strcat(gbt_block, "fe");
+        varint = bin2hex((const unsigned char *)&val, 4);
+      }
+      gbt_block = (char *)realloc_strcat(gbt_block, varint);
+      free(varint);
+      gbt_block = (char *)realloc_strcat(gbt_block, work->coinbase);
 
-		s = strdup("{\"id\": 0, \"method\": \"submitblock\", \"params\": [\"");
-		s = (char *)realloc_strcat(s, gbt_block);
-		if (work->job_id) {
-		  s = (char *)realloc_strcat(s, "\", {\"workid\": \"");
-		  s = (char *)realloc_strcat(s, work->job_id);
-		  s = (char *)realloc_strcat(s, "\"}]}");
-		} else
-		  s = (char *)realloc_strcat(s, "\", {}]}");
-		free(gbt_block);
-	  } else {
-		s = strdup("{\"method\": \"getwork\", \"params\": [ \"");
-		s = (char *)realloc_strcat(s, hexstr);
-		s = (char *)realloc_strcat(s, "\" ], \"id\":1}");
-	  }
+      s = strdup("{\"id\": 0, \"method\": \"submitblock\", \"params\": [\"");
+      s = (char *)realloc_strcat(s, gbt_block);
+      if (work->job_id) {
+        s = (char *)realloc_strcat(s, "\", {\"workid\": \"");
+        s = (char *)realloc_strcat(s, work->job_id);
+        s = (char *)realloc_strcat(s, "\"}]}");
+      } else
+        s = (char *)realloc_strcat(s, "\", {}]}");
+      free(gbt_block);
+    } else {
+      s = strdup("{\"method\": \"getwork\", \"params\": [ \"");
+      s = (char *)realloc_strcat(s, hexstr);
+      s = (char *)realloc_strcat(s, "\" ], \"id\":1}");
+    }
   }
   applog(LOG_DEBUG, "DBG: sending %s submit RPC call: %s", pool->rpc_url, s);
   s = (char *)realloc_strcat(s, "\n");
@@ -3552,18 +3552,18 @@ static bool get_upstream_work(struct work *work, CURL *curl, char *curl_err_str)
 
   if(pool->algorithm.type == ALGO_ETHASH)
   {
-	  pool->rpc_req = eth_getwork_rpc;
+    pool->rpc_req = eth_getwork_rpc;
 
-	  val = json_rpc_call(curl, curl_err_str, url, pool->rpc_userpass,
+    val = json_rpc_call(curl, curl_err_str, url, pool->rpc_userpass,
           pool->rpc_req, false, false, &work->rolltime, pool, false);
 
-	  //ethval2 = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
+    //ethval2 = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
       //    eth_gethighestblock_rpc, false, false, &work->rolltime, pool, false);
 
   }
   else
   {
-	  val = json_rpc_call(curl, curl_err_str, url, pool->rpc_userpass, pool->rpc_req, false,
+    val = json_rpc_call(curl, curl_err_str, url, pool->rpc_userpass, pool->rpc_req, false,
           false, &work->rolltime, pool, false);
   }
 
@@ -6049,22 +6049,22 @@ static void *stratum_sthread(void *userdata)
       sshare->work = work;
 
       applog(LOG_DEBUG, "stratum_sthread() algorithm = %s", pool->algorithm.name);
-		
+
       char *ASCIINonce = bin2hex(&work->XMRNonce, 4);
-      
+
       ASCIIResult = bin2hex(work->hash, 32);
-       
+
       mutex_lock(&sshare_lock);
       /* Give the stratum share a unique id */
       sshare->id = swork_id++;
       mutex_unlock(&sshare_lock);
-      
+
       snprintf(s, s_size, "{\"method\": \"submit\", \"params\": {\"id\": \"%s\", \"job_id\": \"%s\", \"nonce\": \"%s\", \"result\": \"%s\"}, \"id\":%d}", pool->XMRAuthID, work->job_id, ASCIINonce, ASCIIResult, sshare->id);
 
       free(ASCIINonce);
       free(ASCIIResult);
     }
- 
+
     else if(pool->algorithm.type == ALGO_EQUIHASH) {
       char *nonce;
       char *solution;
@@ -6074,13 +6074,13 @@ static void *stratum_sthread(void *userdata)
       sshare->work = work;
 
       applog(LOG_DEBUG, "stratum_sthread() algorithm = %s", pool->algorithm.name);
-      
+
       //get nonce minus extranonce set by server
       nonce = bin2hex(work->equihash_data+108, 32);
       solution = bin2hex(work->equihash_data+140, 1347);
-      
+
       //applog(LOG_DEBUG, "%s: Nonce set to %s", __func__, nonce+strlen(work->nonce1));
-      
+
       mutex_lock(&sshare_lock);
       /* Give the stratum share a unique id */
       sshare->id = swork_id++;
@@ -6330,34 +6330,34 @@ retry_stratum:
 
   if(pool->algorithm.type == ALGO_ETHASH)
   {
-	  pool->rpc_req = eth_getwork_rpc;
+    pool->rpc_req = eth_getwork_rpc;
 
-	  val = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
+    val = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
           pool->rpc_req, true, false, &rolltime, pool, false);
 
-	  cgtime(&tv_getwork_reply);
+    cgtime(&tv_getwork_reply);
 
-	  //ethval2 = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
+    //ethval2 = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
       //    eth_gethighestblock_rpc, true, false, &rolltime, pool, false);
 
   }
   else
   {
-	  val = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
-			  pool->rpc_req, true, false, &rolltime, pool, false);
-	  cgtime(&tv_getwork_reply);
+    val = json_rpc_call(curl, curl_err_str, pool->rpc_url, pool->rpc_userpass,
+        pool->rpc_req, true, false, &rolltime, pool, false);
+    cgtime(&tv_getwork_reply);
 
-	  /* Detect if a http getwork pool has an X-Stratum header at startup,
-	   * and if so, switch to that in preference to getwork if it works */
-	  if (pool->stratum_url && !opt_fix_protocol && stratum_works(pool)) {
-		applog(LOG_NOTICE, "Switching %s to %s", get_pool_name(pool), pool->stratum_url);
-		if (!pool->rpc_url)
-		  pool->rpc_url = strdup(pool->stratum_url);
-		pool->has_stratum = true;
-		curl_easy_cleanup(curl);
+    /* Detect if a http getwork pool has an X-Stratum header at startup,
+     * and if so, switch to that in preference to getwork if it works */
+    if (pool->stratum_url && !opt_fix_protocol && stratum_works(pool)) {
+      applog(LOG_NOTICE, "Switching %s to %s", get_pool_name(pool), pool->stratum_url);
+      if (!pool->rpc_url)
+        pool->rpc_url = strdup(pool->stratum_url);
+      pool->has_stratum = true;
+      curl_easy_cleanup(curl);
 
-		goto retry_stratum;
-	  }
+      goto retry_stratum;
+    }
   }
 
   /* json_rpc_call() above succeeded */
@@ -6662,8 +6662,8 @@ static void gen_stratum_work_cn(struct pool *pool, struct work *work)
     return;
 
   applog(LOG_DEBUG, "[THR%d] gen_stratum_work_cn() - algorithm = %s", work->thr_id, pool->algorithm.name);
-  
-  cg_rlock(&pool->data_lock);	
+
+  cg_rlock(&pool->data_lock);
   work->job_id = strdup(pool->swork.job_id);
   work->XMRTarget = pool->XMRTarget;
   //strcpy(work->XMRID, pool->XMRID);
@@ -6675,9 +6675,9 @@ static void gen_stratum_work_cn(struct pool *pool, struct work *work)
   work->work_difficulty = work->sdiff;
   work->network_diff = pool->diff1;
   cg_runlock(&pool->data_lock);
-  
+
   work->target[7] = work->XMRTarget;
-  
+
   local_work++;
   work->pool = pool;
   work->stratum = true;
@@ -6726,13 +6726,12 @@ static void gen_stratum_work_equihash(struct pool *pool, struct work *work)
   cg_runlock(&pool->data_lock);
 
   if (opt_debug) {
-    char *header, *merkle_hash;
+    char *header;
 
     header = bin2hex(work->equihash_data, 143);
     applog(LOG_DEBUG, "[THR%d] Generated stratum header %s", work->thr_id, header);
     applog(LOG_DEBUG, "[THR%d] job_id %s, nonce1 %s, nonce2 %"PRIu64", ntime %s", work->thr_id, work->job_id, work->nonce1, work->nonce2, work->ntime);
     free(header);
-    free(merkle_hash);
   }
 
   /* equihash validates on the network target not share target... */
