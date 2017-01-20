@@ -1873,8 +1873,8 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
 {
   char *job_id;
   bool clean;
-  uint8_t EthWork[32], SeedHash[32], Target[32], NetDiff[32];
-  char *EthWorkStr, *SeedHashStr, *TgtStr, *BlockHeightStr, *NetDiffStr = NULL;
+  uint8_t EthWork[32], SeedHash[32];
+  char *EthWorkStr, *SeedHashStr, *BlockHeightStr;
   int ret = true;
 
   /*json_t *arr = json_array_get(val, 0);
@@ -1884,18 +1884,16 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
     goto out;
   }*/
 
-  job_id = json_array_string(val, 0);
-  EthWorkStr = json_array_string(val, 1);
-  SeedHashStr = json_array_string(val, 2);
-  TgtStr = json_array_string(val, 3);
-  clean = json_is_true(json_array_get(val, 4));
-
-  if(json_array_size(val) == 6) {
-    applog(LOG_DEBUG, "Pool supports network target.");
-    NetDiffStr = json_array_string(val, 5);
+  if(json_array_size(val) != 4) {
+    applog(LOG_DEBUG, "parse_notify_ethash: Too many array value.");
+    return false;
   }
+  job_id = json_array_string(val, 0);
+  SeedHashStr = json_array_string(val, 1);
+  EthWorkStr = json_array_string(val, 2);
+  clean = json_is_true(json_array_get(val, 3));
 
-  if (job_id == NULL || SeedHashStr == NULL || EthWorkStr == NULL || TgtStr == NULL) {
+  if (job_id == NULL || SeedHashStr == NULL || EthWorkStr == NULL) {
     applog(LOG_DEBUG, "parse_notify_ethash: Missing an array value.");
     ret = false;
     goto out;
@@ -1905,9 +1903,7 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
 
   ret &= hex2bin(SeedHash, SeedHashStr + 2, 32) || hex2bin(SeedHash, SeedHashStr, 32);
 
-  ret &= parse_diff_ethash(Target, TgtStr);
-
-  if (!ret || (NetDiffStr != NULL && !parse_diff_ethash(NetDiff, NetDiffStr))) {
+  if (!ret) {
     ret = false;
     goto out;
   }
@@ -1926,15 +1922,12 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
   }
   memcpy(pool->EthWork, EthWork, 32);
 
-  swab256(pool->Target, Target);
-  pool->swork.diff = eth2pow256 / le256todouble(pool->Target);
+  if (pool->next_diff > 0) {
+    pool->swork.diff = pool->next_diff;
+  }
   suffix_string_double(pool->swork.diff, pool->diff, sizeof(pool->diff), 0);
 
   pool->diff1 = 0;
-  if (NetDiffStr != NULL) {
-    swab256(pool->NetDiff, NetDiff);
-    pool->diff1 = eth2pow256 / le256todouble(pool->NetDiff);
-  }
   pool->getwork_requested++;
   //pool->eth_cache.disabled = false;
 
@@ -1944,7 +1937,6 @@ static bool parse_notify_ethash(struct pool *pool, json_t *val)
     applog(LOG_DEBUG, "job_id: %s", job_id);
     applog(LOG_DEBUG, "EthWork: %s", EthWorkStr);
     applog(LOG_DEBUG, "SeedHash: %s", SeedHashStr);
-    applog(LOG_DEBUG, "Target: %s", TgtStr);
     applog(LOG_DEBUG, "clean: %s", clean ? "yes" : "no");
   }
 
@@ -1960,10 +1952,6 @@ out:
     free(SeedHashStr);
   if (EthWorkStr != NULL)
     free(EthWorkStr);
-  if (TgtStr != NULL)
-    free(TgtStr);
-  if (NetDiffStr != NULL)
-    free(NetDiffStr);
   return ret;
 }
 
@@ -2135,10 +2123,41 @@ static bool parse_extranonce_equihash(struct pool *pool, json_t *val)
   return true;
 }
 
+static bool parse_extranonce_ethash(struct pool *pool, json_t *val)
+{
+  char *n1str;
+
+  if (!(n1str = json_array_string(val, 0))) {
+    return false;
+  }
+
+  cg_wlock(&pool->data_lock);
+  free(pool->nonce1);
+  pool->nonce1 = n1str;
+  pool->n1_len = strlen(n1str) / 2; //size in bytes of nonce1 in the header
+
+  free(pool->nonce1bin);
+  if (unlikely(!(pool->nonce1bin = (unsigned char *)calloc(pool->n1_len, 1)))) {
+    quithere(1, "%s: Failed to calloc pool->nonce1bin", __func__);
+  }
+
+  hex2bin(pool->nonce1bin, pool->nonce1, pool->n1_len);
+  pool->n2size = 4 - pool->n1_len; //size in bytes of nonce2 in the header
+  pool->nonce2 = 0; //reset nonce 2 to 0
+  cg_wunlock(&pool->data_lock);
+
+  applog(LOG_NOTICE, "%s extranonce set to %s", get_pool_name(pool), n1str);
+
+  return true;
+}
+
 static bool parse_extranonce(struct pool *pool, json_t *val)
 {
   if (pool->algorithm.type == ALGO_EQUIHASH) {
     return parse_extranonce_equihash(pool, val);
+  }
+  if (pool->algorithm.type == ALGO_ETHASH) {
+    return parse_extranonce_ethash(pool, val);
   }
 
   char *nonce1;
@@ -3060,8 +3079,30 @@ resend:
     pool->swork.diff = 1;
 
     pool->sessionid = NULL;
-    pool->nonce1 = NULL;
-    pool->n1_len = 0;
+    nonce1 = json_array_string(res_val, 1);
+    if (!nonce1) {
+      applog(LOG_INFO, "Failed to get nonce1 in initiate_stratum");
+      goto out;
+    }
+
+    cg_wlock(&pool->data_lock);
+    free(pool->nonce1);
+
+    pool->nonce1 = nonce1;
+    pool->n1_len = strlen(nonce1) / 2;
+
+    free(pool->nonce1bin);
+
+    pool->nonce1bin = (unsigned char *)calloc(pool->n1_len, 1);
+    if (unlikely(!pool->nonce1bin)) {
+      quithere(1, "Failed to calloc pool->nonce1bin");
+    }
+
+    hex2bin(pool->nonce1bin, pool->nonce1, pool->n1_len);
+    pool->n2size = 4 - pool->n1_len; //size in bytes of nonce2 in the header
+    pool->nonce2 = 0; //reset nonce 2 to 0
+
+    cg_wunlock(&pool->data_lock);
 
     json_decref(val);
     return true;
