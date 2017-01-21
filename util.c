@@ -2391,6 +2391,10 @@ bool subscribe_extranonce(struct pool *pool)
   json_error_t err;
   bool ret = false;
 
+  if (pool->algorithm.type == ALGO_CRYPTONIGHT) {
+    return true;
+  }
+
   sprintf(s, "{\"id\": %d, \"method\": \"mining.extranonce.subscribe\", \"params\": []}", swork_id++);
 
   if (!stratum_send(pool, s, strlen(s))) {
