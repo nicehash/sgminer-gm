@@ -6726,13 +6726,12 @@ static void gen_stratum_work_equihash(struct pool *pool, struct work *work)
   cg_runlock(&pool->data_lock);
 
   if (opt_debug) {
-    char *header, *merkle_hash;
+    char *header;
 
     header = bin2hex(work->equihash_data, 143);
     applog(LOG_DEBUG, "[THR%d] Generated stratum header %s", work->thr_id, header);
     applog(LOG_DEBUG, "[THR%d] job_id %s, nonce1 %s, nonce2 %"PRIu64", ntime %s", work->thr_id, work->job_id, work->nonce1, work->nonce2, work->ntime);
     free(header);
-    free(merkle_hash);
   }
 
   /* equihash validates on the network target not share target... */
