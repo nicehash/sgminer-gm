@@ -290,10 +290,8 @@ static int __set_fanspeed(gpu_sysfs_info *info, float fanpercent)
   snprintf(speed_str, sizeof(speed_str), "%d", speed);
 #ifdef __linux__
   if (info->fd_fan != -1 && fanpercent >= 0.f) {
-    pthread_mutex_lock(&info->rw_lock);
     lseek(info->fd_fan, 0, SEEK_SET);
     ret = (write(info->fd_fan, speed_str, strlen(speed_str)) <= 0);
-    pthread_mutex_unlock(&info->rw_lock);
     if (!ret)
       info->target_fanpercent = fanpercent;
   }
@@ -307,7 +305,9 @@ int sysfs_set_fanspeed(int gpu, float fanpercent)
   if (has_sysfs_hwcontrols && gpus[gpu].has_sysfs_hwcontrols) {
     gpu_sysfs_info *info = &gpus[gpu].sysfs_info;
     applog(LOG_DEBUG, "GPU%d: set fanpercent to %.3g%%", gpu, fanpercent);
+    pthread_mutex_lock(&info->rw_lock);
     ret = __set_fanspeed(info, fanpercent);
+    pthread_mutex_unlock(&info->rw_lock);
   }
   return ret;
 }
