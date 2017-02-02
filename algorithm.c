@@ -1296,6 +1296,7 @@ static algorithm_settings_t algos[] = {
 
   { "ethash",     ALGO_ETHASH,   "", 1, 1, 1, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x000000FFUL, 0, 128, 0, ethash_regenhash, NULL, queue_ethash_kernel, gen_hash, append_ethash_compiler_options },
   { "ethash-genoil",     ALGO_ETHASH,   "", 1, 1, 1, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x000000FFUL, 0, 128, 0, ethash_regenhash, NULL, queue_ethash_kernel, gen_hash, append_ethash_compiler_options },
+  { "ethash-new",     ALGO_ETHASH,   "", 1, 1, 1, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x000000FFUL, 0, 128, 0, ethash_regenhash, NULL, queue_ethash_kernel, gen_hash, append_ethash_compiler_options },
 
   { "cryptonight", ALGO_CRYPTONIGHT, "", (1ULL << 32), (1ULL << 32), (1ULL << 32), 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 6, 0, 0, cryptonight_regenhash, NULL, queue_cryptonight_kernel, gen_hash, NULL },
   
