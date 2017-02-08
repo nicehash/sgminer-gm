@@ -107,16 +107,22 @@ static void CNKeccakF1600(uint64_t *st)
 	}
 }
 
-void CNKeccak(uint64_t *output, uint64_t *input)
+void CNKeccak(uint64_t *output, uint64_t *input, uint32_t Length)
 {
 	uint64_t st[25];
 	
 	// Copy 72 bytes
-	for(int i = 0; i < 9; ++i) st[i] = input[i];
+	//for(int i = 0; i < 9; ++i) st[i] = input[i];
 	
-	st[9] = (input[9] & 0x00000000FFFFFFFFUL) | 0x0000000100000000UL;
+	//st[9] = (input[9] & 0x00000000FFFFFFFFUL) | 0x0000000100000000UL;
 	
-	for(int i = 10; i < 25; ++i) st[i] = 0x00UL;
+	memcpy(st, input, Length);
+	
+	((uint8_t *)st)[Length] = 0x01;
+	
+	memset(((uint8_t *)st) + Length + 1, 0x00, 128 - Length - 1);
+	
+	for(int i = 16; i < 25; ++i) st[i] = 0x00UL;
 	
 	// Last bit of padding
 	st[16] = 0x8000000000000000UL;
@@ -178,13 +184,13 @@ void AESExpandKey256(uint32_t *keybuf)
 	}
 }
 
-void cryptonight(uint8_t *Output, uint8_t *Input)
+void cryptonight(uint8_t *Output, uint8_t *Input, uint32_t Length)
 {
 	CryptonightCtx CNCtx;
 	uint64_t text[16], a[2], b[2];
 	uint32_t ExpandedKey1[64], ExpandedKey2[64];
 	
-	CNKeccak(CNCtx.State, Input);
+	CNKeccak(CNCtx.State, Input, Length);
 	
 	for(int i = 0; i < 4; ++i) ((uint64_t *)ExpandedKey1)[i] = CNCtx.State[i];
 	for(int i = 0; i < 4; ++i) ((uint64_t *)ExpandedKey2)[i] = CNCtx.State[i + 4];
@@ -299,9 +305,9 @@ void cryptonight_regenhash(struct work *work)
 	
 	work->XMRNonce = *nonce;
 	
-	memcpy(data, work->data, 19 * 4);
+	memcpy(data, work->data, work->XMRBlobLen);
 		
-	cryptonight(ohash, data);
+	cryptonight(ohash, data, work->XMRBlobLen);
 	
 	char *tmpdbg = bin2hex(ohash, 32);
 	

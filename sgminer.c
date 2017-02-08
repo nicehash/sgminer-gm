@@ -6668,8 +6668,9 @@ static void gen_stratum_work_cn(struct pool *pool, struct work *work)
   work->XMRTarget = pool->XMRTarget;
   //strcpy(work->XMRID, pool->XMRID);
   //work->XMRBlockBlob = strdup(pool->XMRBlockBlob);
-  memcpy(work->XMRBlob, pool->XMRBlob, 76);
-  memcpy(work->data, work->XMRBlob, 76);
+  memcpy(work->XMRBlob, pool->XMRBlob, pool->XMRBlobLen);
+  work->XMRBlobLen = pool->XMRBlobLen;
+  memcpy(work->data, work->XMRBlob, work->XMRBlobLen);
   memset(work->target, 0xFF, 32);
   work->sdiff = (double)0xffffffff / pool->XMRTarget;
   work->work_difficulty = work->sdiff;

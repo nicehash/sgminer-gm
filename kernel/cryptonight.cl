@@ -337,7 +337,7 @@ void AESExpandKey256(uint *keybuf)
 #define IDX(x)	((x) * (get_global_size(0)))
 
 __attribute__((reqd_work_group_size(WORKSIZE, 8, 1)))
-__kernel void search(__global ulong *input, __global uint4 *Scratchpad, __global ulong *states)
+__kernel void search(__global ulong *input, uint InputLen, __global uint4 *Scratchpad, __global ulong *states)
 {
 	ulong State[25];
 	uint ExpandedKey1[256];
@@ -364,9 +364,15 @@ __kernel void search(__global ulong *input, __global uint4 *Scratchpad, __global
 	((uint *)State)[9] |= ((get_global_id(0)) & 0xFF) << 24;
 	((uint *)State)[10] &= 0xFF000000U;
 	((uint *)State)[10] |= ((get_global_id(0) >> 8));
-	State[9] = (input[9] & 0x00000000FFFFFFFFUL) | 0x0000000100000000UL;
+	State[9] = (input[9] & 0x00000000FFFFFFFFUL); //| 0x0000000100000000UL;
 	
-	for(int i = 10; i < 25; ++i) State[i] = 0x00UL;
+	for(int i = 76; i < InputLen; ++i) ((uchar *)State)[i] = ((__global uchar *)input)[i];
+	
+	((uchar *)State)[InputLen] = 0x01;
+	
+	for(int i = InputLen + 1; i < 128; ++i) ((uchar *)State)[i] = 0x00;
+	
+	for(int i = 16; i < 25; ++i) State[i] = 0x00UL;
 	
 	// Last bit of padding
 	State[16] = 0x8000000000000000UL;

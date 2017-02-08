@@ -1972,7 +1972,7 @@ bool parse_notify_cn(struct pool *pool, json_t *val)
   char *job_id = NULL;
   bool clean;
   uint32_t XMRTarget;
-  uint8_t XMRBlob[76];
+  uint8_t XMRBlob[128];
   int ret = true;
 
   /*json_t *arr = json_array_get(val, 0);
@@ -1998,7 +1998,15 @@ bool parse_notify_cn(struct pool *pool, json_t *val)
   }
 
   const char *blobval = json_string_value(blob);
-  if (!hex2bin(XMRBlob, blobval, 76)) {
+  
+  if(strlen(blobval) > 254)
+  {
+	  applog(LOG_ERR, "Got a massive blob from pool.");
+	  ret = false;
+	  goto out;
+  }
+	  
+  if (!hex2bin(XMRBlob, blobval, strlen(blobval) / 2)) {
     ret = false;
     goto out;
   }
@@ -2015,7 +2023,8 @@ bool parse_notify_cn(struct pool *pool, json_t *val)
   pool->swork.job_id = strdup(job_id);
   pool->swork.clean = true;
   
-  memcpy(pool->XMRBlob, XMRBlob, 76);
+  pool->XMRBlobLen = strlen(blobval) >> 1;
+  memcpy(pool->XMRBlob, XMRBlob, pool->XMRBlobLen);
   pool->XMRTarget = XMRTarget;
   pool->swork.diff = (double)0xffffffff / XMRTarget;
   pool->getwork_requested++;

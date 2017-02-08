@@ -1366,7 +1366,8 @@ struct pool {
   //XMR stuff
   char XMRAuthID[64];
   uint32_t XMRTarget;
-  uint8_t XMRBlob[76];
+  uint32_t XMRBlobLen;
+  uint8_t XMRBlob[128];
   pthread_mutex_t XMRGlobalNonceLock;
   uint32_t XMRGlobalNonce;
   
@@ -1528,7 +1529,8 @@ struct work {
   
   /* cryptonight stuff */
   uint32_t XMRTarget;
-  uint8_t XMRBlob[76];
+  uint32_t XMRBlobLen;
+  uint8_t XMRBlob[128];
     
   uint32_t XMRNonce;
   
