@@ -1098,7 +1098,7 @@ static cl_int queue_cryptonight_kernel(_clState *clState, dev_blk_ctx *blk, __ma
 
 	//le_target = *(cl_ulong *)(blk->work->device_target + 24);
 	memcpy(clState->cldata, blk->work->data, blk->work->XMRBlobLen);
-		
+	
 	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, blk->work->XMRBlobLen, clState->cldata , 0, NULL, NULL);
 	
 	CL_SET_ARG(clState->CLbuffer0);
