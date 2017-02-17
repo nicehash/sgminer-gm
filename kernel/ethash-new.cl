@@ -40,7 +40,7 @@ static __constant uint2 const Keccak_f1600_RC[24] = {
 
 #ifdef LEGACY
 #define barrier(x) mem_fence(x)
-#elif WORKSIZE < 64
+#elif WORKSIZE <= 64
 #error "WORKSIZE <= 64 isn't supported by newer AMD drivers and WORKSIZE > 64 is required"
 #endif
 
@@ -212,9 +212,9 @@ __kernel void search(
     
     __local compute_hash_share sharebuf[WORKSIZE / 4];
 #ifdef LEGACY
-    __local buffer[WORKSIZE / 4];
+    __local uint buffer[WORKSIZE / 4];
 #else
-    __local buffer[WORKSIZE];
+    __local uint buffer[WORKSIZE];
 #endif
     __local compute_hash_share * const share = sharebuf + hash_id;
 
